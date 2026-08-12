@@ -7,11 +7,11 @@ import { getAnalytics, isSupported } from 'firebase/analytics';
 // Read Vite Environment Variables safely
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyC1H8wBWG01MlfpV7mZemBLx6ezgLp1cdk",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "goverment-a6cc7.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "goverment-a6cc7",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "goverment-a6cc7.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "585660159727",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:585660159727:web:9c99ec00dcf5c6a683ed1a",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "govermentvault.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "govermentvault",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "govermentvault.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "102753151068686475143",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:102753151068686475143:web:9c99ec00dcf5c6a683ed1a",
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-YD3X3K86Q9"
 };
 
