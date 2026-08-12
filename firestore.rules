@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserData().role == 'super_admin';
+    }
+    
+    function isDepartmentAdmin(deptId) {
+      return isAuthenticated() && (
+        getUserData().role == 'super_admin' || 
+        (getUserData().role == 'department_admin' && getUserData().departmentId == deptId)
+      );
+    }
+    
+    function isApprovedOfficer() {
+      return isAuthenticated() && getUserData().accountStatus == 'approved';
+    }
+
+    // USERS COLLECTION
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin() || getUserData().role == 'department_admin');
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'accountStatus'])) ||
+        isSuperAdmin()
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    // DEPARTMENTS COLLECTION
+    match /departments/{deptId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    // DOCUMENTS COLLECTION
+    match /documents/{docId} {
+      allow read: if isAuthenticated() && (
+        isSuperAdmin() ||
+        resource.data.confidentiality == 'Public' ||
+        (resource.data.departmentId == getUserData().departmentId) ||
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.assignedReviewerId == request.auth.uid
+      );
+      allow create: if isApprovedOfficer() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isApprovedOfficer() && (
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.assignedReviewerId == request.auth.uid ||
+        isDepartmentAdmin(resource.data.departmentId)
+      );
+      allow delete: if isSuperAdmin() || (isDepartmentAdmin(resource.data.departmentId) && resource.data.status == 'Draft');
+    }
+
+    // DOCUMENT VERSIONS COLLECTION
+    match /documentVersions/{versionId} {
+      allow read: if isAuthenticated();
+      allow create: if isApprovedOfficer();
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // DOCUMENT WORKFLOWS COLLECTION
+    match /documentWorkflows/{workflowId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isApprovedOfficer();
+      allow delete: if false; // Immutable logs
+    }
+
+    // NOTIFICATIONS COLLECTION
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // AUDIT LOGS COLLECTION - Append-only, Strict security!
+    match /auditLogs/{logId} {
+      allow read: if isAuthenticated() && (getUserData().role == 'super_admin' || getUserData().role == 'department_admin');
+      allow create: if isAuthenticated();
+      allow update: if false; // STRICT: Audit records CANNOT be edited!
+      allow delete: if false; // STRICT: Audit records CANNOT be deleted!
+    }
+
+    // REGISTRATION REQUESTS COLLECTION
+    match /registrationRequests/{requestId} {
+      allow read: if isAuthenticated() && (request.auth.uid == requestId || getUserData().role == 'super_admin' || getUserData().role == 'department_admin');
+      allow create: if isAuthenticated() && request.auth.uid == requestId;
+      allow update: if isAuthenticated() && (getUserData().role == 'super_admin' || getUserData().role == 'department_admin');
+      allow delete: if isSuperAdmin();
+    }
+
+    // SYSTEM SETTINGS COLLECTION
+    match /systemSettings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+  }
+}

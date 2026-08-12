@@ -1,0 +1,40 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isApprovedOfficer() {
+      return isAuthenticated();
+    }
+
+    // Document Storage path: documents/{departmentId}/{documentId}/{version}/{filename}
+    match /documents/{departmentId}/{documentId}/{version}/{filename} {
+      // Allowed MIME types: PDF, DOCX, XLSX, PNG, JPG
+      function isValidFileType() {
+        return request.resource.contentType.matches('application/pdf')
+          || request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+          || request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+          || request.resource.contentType.matches('image/jpeg')
+          || request.resource.contentType.matches('image/png');
+      }
+
+      // Max size: 25MB
+      function isValidSize() {
+        return request.resource.size <= 25 * 1024 * 1024;
+      }
+
+      allow read: if isAuthenticated();
+      allow write: if isApprovedOfficer() && isValidFileType() && isValidSize();
+      allow delete: if false; // File deletion restricted to admin script
+    }
+
+    // User Avatar path: avatars/{userId}/{filename}
+    match /avatars/{userId}/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId && request.resource.size <= 5 * 1024 * 1024;
+    }
+  }
+}

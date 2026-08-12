@@ -1,0 +1,16 @@
+{
+  "name": "Smart Digital Documentation System",
+  "short_name": "GovDoc",
+  "description": "Secure digital document management platform for government offices.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1c30",
+  "theme_color": "#1e385e",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
