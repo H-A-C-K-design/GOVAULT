@@ -28,16 +28,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (profile && profile.accountStatus === 'approved') {
             setCurrentUser(profile);
           } else {
-            setCurrentUser(DEMO_USERS[0]);
-            localStorage.setItem('govdoc_current_user_uid', DEMO_USERS[0].uid);
+            setCurrentUser(null);
+            localStorage.removeItem('govdoc_current_user_uid');
           }
         } else {
-          setCurrentUser(DEMO_USERS[0]);
-          localStorage.setItem('govdoc_current_user_uid', DEMO_USERS[0].uid);
+          setCurrentUser(null);
         }
       } catch (err) {
         console.error("Auth init error", err);
-        setCurrentUser(DEMO_USERS[0]);
+        setCurrentUser(null);
       } finally {
         setLoading(false);
       }
