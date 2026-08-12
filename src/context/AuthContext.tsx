@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { UserProfile, UserRole } from '../types';
 import { DataService } from '../services/dataService';
-import { DEMO_USERS } from '../services/mockData';
+
 
 interface AuthContextType {
   currentUser: UserProfile | null;
