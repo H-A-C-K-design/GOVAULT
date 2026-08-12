@@ -11,7 +11,7 @@ import {
   ShieldAlert, 
   ArrowRight, 
   Cloud, 
-  UserCheck,
+  LogIn,
   Workflow,
   Mail,
   Key,
@@ -155,21 +155,21 @@ export const LandingPage: React.FC = () => {
               </p>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                <a
-                  href="#homepage-auth-portal"
-                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-gov-600 to-indigo-600 hover:from-gov-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-gov-950/50 border border-gov-400/30 transition-all transform hover:-translate-y-0.5"
-                >
-                  <FileText className="w-5 h-5" />
-                  <span>Access Portal Below</span>
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-
                 <Link
                   to="/register"
+                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-gov-600 to-indigo-600 hover:from-gov-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-gov-950/50 border border-gov-400/30 transition-all transform hover:-translate-y-0.5"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  <span>Get Started</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+
+                <Link
+                  to="/login"
                   className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 text-slate-200 font-bold text-sm border border-slate-700 hover:border-slate-600 transition-all"
                 >
-                  <UserCheck className="w-5 h-5 text-gov-400" />
-                  <span>Full Registration Form</span>
+                  <LogIn className="w-5 h-5 text-gov-400" />
+                  <span>Officer Login</span>
                 </Link>
               </div>
 
