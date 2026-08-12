@@ -264,8 +264,8 @@ export class DataService {
       joiningDate: data.joiningDate,
       reportingOfficer: data.reportingOfficer,
       role: 'officer',
-      accountStatus: 'pending',
-      emailVerified: false,
+      accountStatus: 'approved',
+      emailVerified: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

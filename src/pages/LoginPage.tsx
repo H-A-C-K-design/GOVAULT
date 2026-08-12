@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const loginSchema = z.object({
@@ -38,10 +38,12 @@ export const LoginPage: React.FC = () => {
       
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-2">
         <Link to="/" className="inline-flex items-center space-x-3 group">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-gov-600 to-indigo-600 flex items-center justify-center text-white shadow-lg border border-gov-400/30">
-            <Shield className="w-7 h-7" />
-          </div>
-          <span className="font-bold text-2xl tracking-tight text-white">GovDoc System</span>
+          <img 
+            src="/gov_seal.jpg" 
+            alt="Government of India Seal" 
+            className="w-12 h-12 rounded-full object-cover shadow-lg border border-amber-500/50 group-hover:scale-105 transition-transform" 
+          />
+          <span className="font-extrabold text-2xl tracking-tight text-white">GOVAULT</span>
         </Link>
         <h2 className="text-2xl font-extrabold text-white">Officer Portal Authentication</h2>
         <p className="text-xs text-slate-400">

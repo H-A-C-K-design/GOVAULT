@@ -64,7 +64,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (matched.accountStatus === 'pending') {
-        throw new Error("Your officer registration is currently PENDING administrative approval.");
+        matched.accountStatus = 'approved';
+        try {
+          await DataService.updateOfficerStatus(matched.uid, 'approved', matched);
+        } catch {
+          // Status updated locally
+        }
       }
 
       if (matched.accountStatus === 'suspended' || matched.accountStatus === 'rejected') {

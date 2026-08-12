@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -16,11 +16,13 @@ export const ForgotPasswordPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 selection:bg-gov-500 selection:text-white">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-2">
-        <Link to="/" className="inline-flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-gov-600 to-indigo-600 flex items-center justify-center text-white shadow-lg">
-            <Shield className="w-7 h-7" />
-          </div>
-          <span className="font-bold text-2xl tracking-tight text-white">GovDoc System</span>
+        <Link to="/" className="inline-flex items-center space-x-3 group">
+          <img 
+            src="/gov_seal.jpg" 
+            alt="Government of India Seal" 
+            className="w-12 h-12 rounded-full object-cover shadow-lg border border-amber-500/50 group-hover:scale-105 transition-transform" 
+          />
+          <span className="font-extrabold text-2xl tracking-tight text-white">GOVAULT</span>
         </Link>
         <h2 className="text-2xl font-extrabold text-white">Reset Official Password</h2>
         <p className="text-xs text-slate-400">
