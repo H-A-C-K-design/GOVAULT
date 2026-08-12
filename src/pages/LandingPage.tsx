@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Shield, 
   Lock, 
@@ -12,135 +12,470 @@ import {
   ArrowRight, 
   Cloud, 
   UserCheck,
-  Workflow
+  Workflow,
+  Mail,
+  Key,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  UserPlus
 } from 'lucide-react';
 import { Navbar } from '../components/layout/Navbar';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { DataService } from '../services/dataService';
+import type { Department } from '../types';
 
 export const LandingPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { login, register: registerAuth, switchDemoUser } = useAuth();
+
+  // Tab state: 'login' | 'register'
+  const [activeAuthTab, setActiveAuthTab] = useState<'login' | 'register'>('login');
+  
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Register form state
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [regFullName, setRegFullName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regEmpId, setRegEmpId] = useState('');
+  const [regDeptId, setRegDeptId] = useState('');
+  const [regDesignation, setRegDesignation] = useState('');
+  const [regBranch, setRegBranch] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regError, setRegError] = useState<string | null>(null);
+  const [regSuccess, setRegSuccess] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  useEffect(() => {
+    DataService.getDepartmentsList().then(setDepartments);
+  }, []);
+
+  const handleInlineLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    if (!loginEmail || !loginPassword) {
+      setLoginError("Please enter your official email and password.");
+      return;
+    }
+    setIsLoggingIn(true);
+    try {
+      await login(loginEmail, loginPassword);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setLoginError(err.message || "Login failed. Check your official credentials.");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleInlineQuickDemo = async (_email: string, uid: string) => {
+    setLoginError(null);
+    setIsLoggingIn(true);
+    try {
+      await switchDemoUser(uid);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setLoginError("Demo account access error.");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleInlineRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegError(null);
+    if (!regFullName || !regEmail || !regEmpId || !regDeptId || !regDesignation || !regBranch || !regPassword) {
+      setRegError("Please fill out all required fields.");
+      return;
+    }
+    if (regPassword.length < 8) {
+      setRegError("Password must be at least 8 characters.");
+      return;
+    }
+    setIsRegistering(true);
+    try {
+      const dept = departments.find(d => d.id === regDeptId);
+      await registerAuth({
+        fullName: regFullName,
+        officialEmail: regEmail,
+        employeeId: regEmpId,
+        departmentId: regDeptId,
+        departmentName: dept?.name || 'Government Office',
+        designation: regDesignation,
+        officeBranch: regBranch,
+        password: regPassword
+      });
+      setRegSuccess(true);
+    } catch (err: any) {
+      setRegError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-gov-500 selection:text-white">
       <Navbar />
 
-      <section className="relative pt-16 pb-24 md:pt-24 md:pb-32 overflow-hidden bg-gradient-to-b from-slate-900 via-navy-900 to-slate-950 border-b border-slate-800">
+      <section className="relative pt-16 pb-24 md:pt-20 md:pb-28 overflow-hidden bg-gradient-to-b from-slate-900 via-navy-900 to-slate-950 border-b border-slate-800">
         
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gov-600/15 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="lg:col-span-7 space-y-6 text-center lg:text-left"
+              className="lg:col-span-6 space-y-6 text-center lg:text-left pt-2"
             >
               <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-gov-900/80 border border-gov-700/60 text-gov-300 text-xs font-semibold shadow-inner">
                 <Shield className="w-4 h-4 text-emerald-400" />
                 <span>OFFICIAL ENTERPRISE PLATFORM FOR GOVERNMENT OFFICES</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+              <h1 className="text-3xl sm:text-5xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
                 Smart Digital <br />
                 <span className="bg-gradient-to-r from-gov-300 via-blue-400 to-indigo-300 bg-clip-text text-transparent">
                   Documentation System
                 </span>
               </h1>
 
-              <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
+              <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
                 Securely digitize, manage, track, and retrieve official government documents, departmental records, and approval workflows from one centralized digital infrastructure.
               </p>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                <Link
-                  to="/login"
+                <a
+                  href="#homepage-auth-portal"
                   className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-gov-600 to-indigo-600 hover:from-gov-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-gov-950/50 border border-gov-400/30 transition-all transform hover:-translate-y-0.5"
                 >
                   <FileText className="w-5 h-5" />
-                  <span>Officer Login</span>
+                  <span>Access Portal Below</span>
                   <ArrowRight className="w-4 h-4" />
-                </Link>
+                </a>
 
                 <Link
                   to="/register"
                   className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 text-slate-200 font-bold text-sm border border-slate-700 hover:border-slate-600 transition-all"
                 >
                   <UserCheck className="w-5 h-5 text-gov-400" />
-                  <span>Register as Officer</span>
+                  <span>Full Registration Form</span>
                 </Link>
               </div>
 
-              <div className="pt-4 flex items-center justify-center lg:justify-start space-x-6 text-xs text-slate-400">
+              <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-slate-400">
                 <span className="flex items-center gap-1.5">
                   <Lock className="w-4 h-4 text-emerald-400" /> HTTPS Port 443
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-gov-400" /> Firebase Security Rules
+                  <CheckCircle2 className="w-4 h-4 text-gov-400" /> Firestore Database Sync
                 </span>
                 <span className="flex items-center gap-1.5">
                   <ShieldAlert className="w-4 h-4 text-amber-400" /> Immutable Audit Logs
                 </span>
               </div>
+
+              <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2 text-left hidden sm:block">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-gov-400">STATE GOVERNANCE DIRECTORY</span>
+                  <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded">FIRESTORE CONNECTED</span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Officer user profiles, authentication sessions, and document revision logs are securely stored on Firebase Cloud Infrastructure.
+                </p>
+              </div>
             </motion.div>
 
+            {/* Embedded Officer Access & Registration Card */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
+              id="homepage-auth-portal"
+              initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="lg:col-span-5"
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="lg:col-span-6"
             >
-              <div className="relative rounded-2xl bg-gradient-to-b from-slate-800/80 to-slate-900/90 p-6 border border-slate-700/80 shadow-2xl backdrop-blur-xl">
+              <div className="rounded-2xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 p-5 sm:p-6 border border-gov-500/30 shadow-2xl backdrop-blur-xl space-y-5">
                 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-700">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 rounded-full bg-rose-500"></div>
-                      <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                      <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                    </div>
-                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
-                      SECURE ENCRYPTED SESSION
-                    </span>
+                {/* Header Tab Switcher */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-rose-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                    <span className="text-xs font-bold text-white pl-2">OFFICER PORTAL ACCESS</span>
                   </div>
-
-                  <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-gov-400 font-mono">DOC-2026-REV-001</span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                        APPROVED
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-bold text-white">State Tax Revenue Optimization Policy 2026-27</h4>
-                    <p className="text-xs text-slate-400 leading-normal">
-                      Digital GST compliance directives and municipal tax collection procedures for state districts.
-                    </p>
-                    <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500">
-                      <span>Owner: Dr. Rajesh Sharma</span>
-                      <span className="text-indigo-400">Dept: Revenue</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-2 pt-2 text-center text-[10px]">
-                    <div className="p-2 rounded bg-gov-900/50 border border-gov-700/50 text-gov-300">
-                      <span className="block font-bold">1. Upload</span>
-                      <span className="text-[9px] text-emerald-400">Done</span>
-                    </div>
-                    <div className="p-2 rounded bg-gov-900/50 border border-gov-700/50 text-gov-300">
-                      <span className="block font-bold">2. Verify</span>
-                      <span className="text-[9px] text-emerald-400">Done</span>
-                    </div>
-                    <div className="p-2 rounded bg-gov-900/50 border border-gov-700/50 text-gov-300">
-                      <span className="block font-bold">3. Review</span>
-                      <span className="text-[9px] text-emerald-400">Done</span>
-                    </div>
-                    <div className="p-2 rounded bg-emerald-950/60 border border-emerald-700 text-emerald-300">
-                      <span className="block font-bold">4. Approved</span>
-                      <span className="text-[9px] font-bold text-emerald-400">Final</span>
-                    </div>
-                  </div>
-
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded border border-emerald-800">
+                    FIRESTORE SYNCED
+                  </span>
                 </div>
+
+                {/* Tabs */}
+                <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-950 border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setActiveAuthTab('login')}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
+                      activeAuthTab === 'login'
+                        ? 'bg-gov-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Officer Sign In</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveAuthTab('register')}
+                    className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
+                      activeAuthTab === 'register'
+                        ? 'bg-indigo-600 text-white shadow'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Register Officer</span>
+                  </button>
+                </div>
+
+                {/* TAB 1: LOGIN FORM */}
+                {activeAuthTab === 'login' && (
+                  <form onSubmit={handleInlineLogin} className="space-y-4 pt-1">
+                    {loginError && (
+                      <div className="p-3 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-200 text-xs flex items-start space-x-2">
+                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                        <span>{loginError}</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1">Official Email Address</label>
+                      <div className="relative">
+                        <input
+                          type="email"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          placeholder="e.g. admin@gov.in"
+                          className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
+                        />
+                        <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                      <div className="relative">
+                        <input
+                          type={showLoginPassword ? 'text' : 'password'}
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          placeholder="••••••••••••"
+                          className="w-full pl-9 pr-10 py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
+                        />
+                        <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                        <button
+                          type="button"
+                          onClick={() => setShowLoginPassword(!showLoginPassword)}
+                          className="absolute right-3 top-3 text-slate-400 hover:text-slate-200"
+                        >
+                          {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoggingIn}
+                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-gov-600 to-indigo-600 hover:from-gov-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg transition-all border border-gov-400/30 flex items-center justify-center space-x-2"
+                    >
+                      <span>{isLoggingIn ? 'Authenticating with Firestore...' : 'Sign In to Portal'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+
+                    {/* Quick Demo Login */}
+                    <div className="pt-3 border-t border-slate-800 space-y-2">
+                      <p className="text-[10px] uppercase font-bold text-amber-400 tracking-wider text-center flex items-center justify-center gap-1">
+                        <Key className="w-3 h-3" /> Quick Demo Accounts (1-Click Login)
+                      </p>
+                      
+                      <div className="grid grid-cols-2 gap-2 text-left">
+                        <button
+                          type="button"
+                          onClick={() => handleInlineQuickDemo('admin@gov.in', 'user-superadmin')}
+                          className="p-2 rounded-lg bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/80 text-left transition-colors"
+                        >
+                          <span className="block text-[11px] font-bold text-purple-300">Super Admin</span>
+                          <span className="block text-[9px] text-purple-400 truncate">admin@gov.in</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleInlineQuickDemo('deptadmin@revenue.gov.in', 'user-deptadmin-rev')}
+                          className="p-2 rounded-lg bg-blue-950/60 hover:bg-blue-900/60 border border-blue-800/80 text-left transition-colors"
+                        >
+                          <span className="block text-[11px] font-bold text-blue-300">Dept Admin</span>
+                          <span className="block text-[9px] text-blue-400 truncate">deptadmin@revenue.gov.in</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleInlineQuickDemo('officer@health.gov.in', 'user-officer-hlt')}
+                          className="p-2 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-800/80 text-left transition-colors"
+                        >
+                          <span className="block text-[11px] font-bold text-emerald-300">Officer</span>
+                          <span className="block text-[9px] text-emerald-400 truncate">officer@health.gov.in</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleInlineQuickDemo('reviewer@pwd.gov.in', 'user-reviewer-pwd')}
+                          className="p-2 rounded-lg bg-amber-950/60 hover:bg-amber-900/60 border border-amber-800/80 text-left transition-colors"
+                        >
+                          <span className="block text-[11px] font-bold text-amber-300">Reviewer</span>
+                          <span className="block text-[9px] text-amber-400 truncate">reviewer@pwd.gov.in</span>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
+
+                {/* TAB 2: REGISTER FORM */}
+                {activeAuthTab === 'register' && (
+                  <div>
+                    {regSuccess ? (
+                      <div className="p-5 rounded-xl bg-emerald-950/80 border border-emerald-800 text-center space-y-3">
+                        <div className="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-md">
+                          <CheckCircle2 className="w-6 h-6" />
+                        </div>
+                        <h4 className="text-sm font-bold text-white">Registration Submitted to Firestore!</h4>
+                        <p className="text-xs text-slate-300 leading-normal">
+                          Your application has been stored in Firestore. Account status is <span className="font-bold text-amber-400">PENDING</span> administrative review.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRegSuccess(false);
+                            setActiveAuthTab('login');
+                          }}
+                          className="px-4 py-2 rounded-lg bg-gov-600 hover:bg-gov-500 text-white font-bold text-xs"
+                        >
+                          Switch to Officer Login
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleInlineRegister} className="space-y-3">
+                        {regError && (
+                          <div className="p-2.5 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-200 text-xs flex items-start space-x-2">
+                            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                            <span>{regError}</span>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Full Name *</label>
+                            <input
+                              type="text"
+                              value={regFullName}
+                              onChange={(e) => setRegFullName(e.target.value)}
+                              placeholder="Dr. Rajesh Sharma"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Official Email *</label>
+                            <input
+                              type="email"
+                              value={regEmail}
+                              onChange={(e) => setRegEmail(e.target.value)}
+                              placeholder="officer@revenue.gov.in"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Employee ID *</label>
+                            <input
+                              type="text"
+                              value={regEmpId}
+                              onChange={(e) => setRegEmpId(e.target.value)}
+                              placeholder="EMP-REV-104"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Department *</label>
+                            <select
+                              value={regDeptId}
+                              onChange={(e) => setRegDeptId(e.target.value)}
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
+                            >
+                              <option value="">Select Dept...</option>
+                              {departments.map(d => (
+                                <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Designation *</label>
+                            <input
+                              type="text"
+                              value={regDesignation}
+                              onChange={(e) => setRegDesignation(e.target.value)}
+                              placeholder="Nodal Officer"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Office Branch *</label>
+                            <input
+                              type="text"
+                              value={regBranch}
+                              onChange={(e) => setRegBranch(e.target.value)}
+                              placeholder="Secretariat Wing B"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-300 mb-1">Password * (min 8 chars)</label>
+                          <input
+                            type="password"
+                            value={regPassword}
+                            onChange={(e) => setRegPassword(e.target.value)}
+                            placeholder="••••••••••••"
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={isRegistering}
+                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-gov-600 hover:from-indigo-500 hover:to-gov-500 text-white font-bold text-xs shadow-lg transition-all border border-gov-400/30 flex items-center justify-center space-x-2"
+                        >
+                          <span>{isRegistering ? 'Registering on Firestore...' : 'Submit Officer Registration'}</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+
               </div>
             </motion.div>
 

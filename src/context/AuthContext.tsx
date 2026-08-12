@@ -64,9 +64,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("This officer account has been suspended or rejected by Chief Secretariat.");
       }
 
-      matched.lastLoginAt = new Date().toISOString();
+      const now = new Date().toISOString();
+      matched.lastLoginAt = now;
       setCurrentUser(matched);
       localStorage.setItem('govdoc_current_user_uid', matched.uid);
+
+      await DataService.updateUserLastLogin(matched.uid);
 
       await DataService.logAuditEvent({
         actorId: matched.uid,

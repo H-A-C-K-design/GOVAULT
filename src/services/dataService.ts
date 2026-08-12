@@ -20,6 +20,17 @@ import {
   INITIAL_AUDIT_LOGS, 
   INITIAL_NOTIFICATIONS 
 } from './mockData';
+import { db, auth } from './firebase';
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  collection, 
+  updateDoc 
+} from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+
 
 const LOCAL_STORAGE_KEYS = {
   USERS: 'govdoc_users_v1',
@@ -120,10 +131,31 @@ export class DataService {
     };
     logs.unshift(newLog);
     this.setAuditLogs(logs);
+
+    try {
+      await setDoc(doc(db, 'audit_logs', newLog.id), newLog);
+    } catch (err) {
+      console.warn('[Firestore] Notice: Audit log saved locally', err);
+    }
   }
 
   public static async fetchAuditLogs(filter?: { resourceType?: string; actorId?: string; query?: string }): Promise<AuditLog[]> {
     let logs = this.getAuditLogs();
+    try {
+      const snap = await getDocs(collection(db, 'audit_logs'));
+      if (!snap.empty) {
+        const firestoreLogs: AuditLog[] = [];
+        snap.forEach(d => firestoreLogs.push(d.data() as AuditLog));
+        const logMap = new Map<string, AuditLog>();
+        logs.forEach(l => logMap.set(l.id, l));
+        firestoreLogs.forEach(l => logMap.set(l.id, l));
+        logs = Array.from(logMap.values()).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        this.setAuditLogs(logs);
+      }
+    } catch (err) {
+      console.warn('[Firestore] Notice: Fetching local audit logs', err);
+    }
+
     if (filter?.resourceType) {
       logs = logs.filter(l => l.resourceType === filter.resourceType);
     }
@@ -142,12 +174,57 @@ export class DataService {
   }
 
   public static async getUserProfile(uid: string): Promise<UserProfile | null> {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists()) {
+        return userDoc.data() as UserProfile;
+      }
+    } catch (err) {
+      console.warn('[Firestore] Notice: Checking local user profile', err);
+    }
     const users = this.getUsers();
     return users.find(u => u.uid === uid) || null;
   }
 
   public static async getAllUsers(): Promise<UserProfile[]> {
-    return this.getUsers();
+    const localUsers = this.getUsers();
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      if (!snap.empty) {
+        const firestoreUsers: UserProfile[] = [];
+        snap.forEach(d => firestoreUsers.push(d.data() as UserProfile));
+        
+        const userMap = new Map<string, UserProfile>();
+        localUsers.forEach(u => userMap.set(u.officialEmail.toLowerCase(), u));
+        firestoreUsers.forEach(u => userMap.set(u.officialEmail.toLowerCase(), u));
+        
+        const merged = Array.from(userMap.values());
+        this.setUsers(merged);
+        return merged;
+      }
+    } catch (err) {
+      console.warn('[Firestore] Notice: Serving users from local cache', err);
+    }
+    return localUsers;
+  }
+
+  public static async updateUserLastLogin(uid: string): Promise<void> {
+    const now = new Date().toISOString();
+    const users = this.getUsers();
+    const index = users.findIndex(u => u.uid === uid);
+    if (index !== -1) {
+      users[index].lastLoginAt = now;
+      this.setUsers(users);
+    }
+
+    try {
+      await updateDoc(doc(db, 'users', uid), {
+        lastLoginAt: now,
+        updatedAt: now
+      });
+    } catch (err) {
+      console.warn('[Firestore] Notice: Updated login timestamp locally', err);
+    }
   }
 
   public static async registerOfficerRequest(data: {
@@ -164,14 +241,24 @@ export class DataService {
     reportingOfficer?: string;
     password: string;
   }): Promise<UserProfile> {
-    const users = this.getUsers();
+    const allUsers = await this.getAllUsers();
     
-    if (users.some(u => u.officialEmail.toLowerCase() === data.officialEmail.toLowerCase())) {
+    if (allUsers.some(u => u.officialEmail.toLowerCase() === data.officialEmail.toLowerCase())) {
       throw new Error("An officer account with this official email already exists.");
     }
 
+    const newUid = `user-off-${Date.now()}`;
+
+    if (data.password) {
+      try {
+        await createUserWithEmailAndPassword(auth, data.officialEmail, data.password);
+      } catch (authErr: any) {
+        console.warn('[Firebase Auth] Notice:', authErr?.message || authErr);
+      }
+    }
+
     const newUser: UserProfile = {
-      uid: `user-off-${Date.now()}`,
+      uid: newUid,
       fullName: data.fullName,
       officialEmail: data.officialEmail,
       employeeId: data.employeeId,
@@ -190,8 +277,15 @@ export class DataService {
       updatedAt: new Date().toISOString()
     };
 
+    const users = this.getUsers();
     users.push(newUser);
     this.setUsers(users);
+
+    try {
+      await setDoc(doc(db, 'users', newUser.uid), newUser);
+    } catch (err) {
+      console.warn('[Firestore] Saved user locally', err);
+    }
 
     await this.logAuditEvent({
       actorId: newUser.uid,
@@ -218,13 +312,25 @@ export class DataService {
     const index = users.findIndex(u => u.uid === targetUid);
     if (index === -1) throw new Error("Officer not found");
 
+    const now = new Date().toISOString();
     users[index].accountStatus = newStatus;
-    users[index].updatedAt = new Date().toISOString();
+    users[index].updatedAt = now;
     if (rejectionReason) {
       users[index].rejectionReason = rejectionReason;
     }
 
     this.setUsers(users);
+
+    try {
+      await updateDoc(doc(db, 'users', targetUid), {
+        accountStatus: newStatus,
+        updatedAt: now,
+        ...(rejectionReason ? { rejectionReason } : {})
+      });
+    } catch (err) {
+      console.warn('[Firestore] Notice: Status updated locally', err);
+    }
+
 
     const notifs = this.getNotifications();
     notifs.unshift({
