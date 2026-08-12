@@ -192,17 +192,22 @@ export const LandingPage: React.FC = () => {
             >
               <div className="rounded-2xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 p-5 sm:p-6 border border-gov-500/30 shadow-2xl backdrop-blur-xl space-y-5">
                 
-                {/* Header Tab Switcher */}
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-rose-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                    <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                    <span className="text-xs font-bold text-white pl-2">OFFICER PORTAL ACCESS</span>
+                {/* Official Government Header */}
+                <div className="flex items-center justify-between pb-3.5 border-b border-slate-800/80">
+                  <div className="flex items-center space-x-3">
+                    <img 
+                      src="/gov_logo.png" 
+                      alt="Government Seal" 
+                      className="w-10 h-10 rounded-xl object-cover border border-amber-500/40 shadow-md bg-slate-950 p-0.5" 
+                    />
+                    <div>
+                      <h3 className="font-extrabold text-sm text-white tracking-tight flex items-center gap-1.5">
+                        <span>Government of India</span>
+                        <span className="text-[9px] font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded">Official</span>
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-medium">Smart Digital Documentation Portal</p>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded border border-emerald-800">
-                    FIRESTORE SYNCED
-                  </span>
                 </div>
 
                 {/* Tabs */}
