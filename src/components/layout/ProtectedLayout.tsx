@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MobileNav } from './MobileNav';
+import { MobileDrawer } from './MobileDrawer';
 
 export const ProtectedLayout: React.FC = () => {
   const { currentUser, loading } = useAuth();
@@ -29,6 +30,9 @@ export const ProtectedLayout: React.FC = () => {
       
       {/* Desktop Sidebar */}
       <Sidebar className="hidden md:flex shrink-0" />
+
+      {/* Slide-over Mobile Drawer for Android */}
+      <MobileDrawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">

@@ -1,16 +1,19 @@
 {
-  "name": "Smart Digital Documentation System",
-  "short_name": "GovDoc",
-  "description": "Secure digital document management platform for government offices.",
+  "name": "GOVAULT - Smart Digital Documentation System",
+  "short_name": "GOVAULT",
+  "description": "Official secure digital document management platform for Government of India offices.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f1c30",
-  "theme_color": "#1e385e",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "categories": ["government", "productivity", "utilities"],
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/gov_seal.jpg",
       "sizes": "192x192 512x512",
-      "type": "image/svg+xml"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ]
 }
