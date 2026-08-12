@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight, AlertCircle, Key } from 'lucide-react';
+import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const loginSchema = z.object({
@@ -16,10 +16,10 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const { login, switchDemoUser } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema)
   });
 
@@ -30,18 +30,6 @@ export const LoginPage: React.FC = () => {
       navigate('/dashboard');
     } catch (err: any) {
       setServerError(err.message || "Invalid official credentials or unauthorized login attempt.");
-    }
-  };
-
-  const handleQuickDemoLogin = async (email: string, pass: string, uid: string) => {
-    setValue('officialEmail', email);
-    setValue('password', pass);
-    setServerError(null);
-    try {
-      await switchDemoUser(uid);
-      navigate('/dashboard');
-    } catch (err) {
-      console.error(err);
     }
   };
 
@@ -124,51 +112,7 @@ export const LoginPage: React.FC = () => {
 
           </form>
 
-          <div className="pt-4 border-t border-slate-800 space-y-3">
-            <p className="text-[10px] uppercase font-bold text-amber-400 tracking-wider text-center flex items-center justify-center gap-1">
-              <Key className="w-3 h-3" /> Quick Demo Accounts (1-Click Login)
-            </p>
-            
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin('admin@gov.in', 'password123', 'user-superadmin')}
-                className="p-2 rounded-lg bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/80 text-left transition-colors"
-              >
-                <span className="block text-[11px] font-bold text-purple-300">Super Admin</span>
-                <span className="block text-[9px] text-purple-400 truncate">admin@gov.in</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin('deptadmin@revenue.gov.in', 'password123', 'user-deptadmin-rev')}
-                className="p-2 rounded-lg bg-blue-950/60 hover:bg-blue-900/60 border border-blue-800/80 text-left transition-colors"
-              >
-                <span className="block text-[11px] font-bold text-blue-300">Dept Admin</span>
-                <span className="block text-[9px] text-blue-400 truncate">deptadmin@revenue.gov.in</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin('officer@health.gov.in', 'password123', 'user-officer-hlt')}
-                className="p-2 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-800/80 text-left transition-colors"
-              >
-                <span className="block text-[11px] font-bold text-emerald-300">Officer</span>
-                <span className="block text-[9px] text-emerald-400 truncate">officer@health.gov.in</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin('reviewer@pwd.gov.in', 'password123', 'user-reviewer-pwd')}
-                className="p-2 rounded-lg bg-amber-950/60 hover:bg-amber-900/60 border border-amber-800/80 text-left transition-colors"
-              >
-                <span className="block text-[11px] font-bold text-amber-300">Reviewer</span>
-                <span className="block text-[9px] text-amber-400 truncate">reviewer@pwd.gov.in</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="text-center pt-2 border-t border-slate-800">
+          <div className="text-center pt-4 border-t border-slate-800">
             <span className="text-xs text-slate-400">Need an officer account? </span>
             <Link to="/register" className="text-xs font-bold text-gov-400 hover:underline">
               Register Here

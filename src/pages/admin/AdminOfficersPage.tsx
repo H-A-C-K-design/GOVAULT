@@ -134,56 +134,64 @@ export const AdminOfficersPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filteredOfficers.map(u => (
-                <tr key={u.uid} className="hover:bg-slate-50/80 dark:hover:bg-slate-850/60">
-                  <td className="px-4 py-3">
-                    <span className="font-bold text-slate-900 dark:text-white block">{u.fullName}</span>
-                    <span className="font-mono text-[10px] text-gov-600 dark:text-gov-400">{u.employeeId} • {u.officialEmail}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 block">{u.departmentName}</span>
-                    <span className="text-[10px] text-slate-400">{u.designation}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
-                      {u.role.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      u.accountStatus === 'approved' ? 'bg-emerald-100 text-emerald-800' :
-                      u.accountStatus === 'pending' ? 'bg-amber-100 text-amber-800' :
-                      'bg-rose-100 text-rose-800'
-                    }`}>
-                      {u.accountStatus}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right space-x-2">
-                    {u.accountStatus === 'approved' ? (
-                      <button
-                        onClick={() => { setTargetOfficer(u); setActionType('suspend'); setConfirmOpen(true); }}
-                        className="px-2.5 py-1 rounded bg-rose-50 text-rose-700 font-bold hover:bg-rose-100 text-[11px]"
-                      >
-                        Suspend
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => { setTargetOfficer(u); setActionType('activate'); setConfirmOpen(true); }}
-                        className="px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 text-[11px]"
-                      >
-                        Activate
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => { setTargetOfficer(u); setActionType('role'); setNewRole(u.role); setConfirmOpen(true); }}
-                      className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 text-[11px]"
-                    >
-                      Role
-                    </button>
+              {filteredOfficers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-xs text-slate-400">
+                    No officers found in database
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredOfficers.map(u => (
+                  <tr key={u.uid} className="hover:bg-slate-50/80 dark:hover:bg-slate-850/60">
+                    <td className="px-4 py-3">
+                      <span className="font-bold text-slate-900 dark:text-white block">{u.fullName}</span>
+                      <span className="font-mono text-[10px] text-gov-600 dark:text-gov-400">{u.employeeId} • {u.officialEmail}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 block">{u.departmentName}</span>
+                      <span className="text-[10px] text-slate-400">{u.designation}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
+                        {u.role.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        u.accountStatus === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                        u.accountStatus === 'pending' ? 'bg-amber-100 text-amber-800' :
+                        'bg-rose-100 text-rose-800'
+                      }`}>
+                        {u.accountStatus}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right space-x-2">
+                      {u.accountStatus === 'approved' ? (
+                        <button
+                          onClick={() => { setTargetOfficer(u); setActionType('suspend'); setConfirmOpen(true); }}
+                          className="px-2.5 py-1 rounded bg-rose-50 text-rose-700 font-bold hover:bg-rose-100 text-[11px]"
+                        >
+                          Suspend
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { setTargetOfficer(u); setActionType('activate'); setConfirmOpen(true); }}
+                          className="px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 text-[11px]"
+                        >
+                          Activate
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => { setTargetOfficer(u); setActionType('role'); setNewRole(u.role); setConfirmOpen(true); }}
+                        className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 text-[11px]"
+                      >
+                        Role
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

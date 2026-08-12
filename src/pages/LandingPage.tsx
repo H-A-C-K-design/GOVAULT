@@ -14,7 +14,6 @@ import {
   LogIn,
   Workflow,
   Mail,
-  Key,
   AlertCircle,
   Eye,
   EyeOff,
@@ -28,7 +27,7 @@ import type { Department } from '../types';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, register: registerAuth, switchDemoUser } = useAuth();
+  const { login, register: registerAuth } = useAuth();
 
   // Tab state: 'login' | 'register'
   const [activeAuthTab, setActiveAuthTab] = useState<'login' | 'register'>('login');
@@ -70,19 +69,6 @@ export const LandingPage: React.FC = () => {
       navigate('/dashboard');
     } catch (err: any) {
       setLoginError(err.message || "Login failed. Check your official credentials.");
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  const handleInlineQuickDemo = async (_email: string, uid: string) => {
-    setLoginError(null);
-    setIsLoggingIn(true);
-    try {
-      await switchDemoUser(uid);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setLoginError("Demo account access error.");
     } finally {
       setIsLoggingIn(false);
     }
@@ -301,51 +287,6 @@ export const LandingPage: React.FC = () => {
                       <span>{isLoggingIn ? 'Authenticating with Firestore...' : 'Sign In to Portal'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
-
-                    {/* Quick Demo Login */}
-                    <div className="pt-3 border-t border-slate-800 space-y-2">
-                      <p className="text-[10px] uppercase font-bold text-amber-400 tracking-wider text-center flex items-center justify-center gap-1">
-                        <Key className="w-3 h-3" /> Quick Demo Accounts (1-Click Login)
-                      </p>
-                      
-                      <div className="grid grid-cols-2 gap-2 text-left">
-                        <button
-                          type="button"
-                          onClick={() => handleInlineQuickDemo('admin@gov.in', 'user-superadmin')}
-                          className="p-2 rounded-lg bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/80 text-left transition-colors"
-                        >
-                          <span className="block text-[11px] font-bold text-purple-300">Super Admin</span>
-                          <span className="block text-[9px] text-purple-400 truncate">admin@gov.in</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleInlineQuickDemo('deptadmin@revenue.gov.in', 'user-deptadmin-rev')}
-                          className="p-2 rounded-lg bg-blue-950/60 hover:bg-blue-900/60 border border-blue-800/80 text-left transition-colors"
-                        >
-                          <span className="block text-[11px] font-bold text-blue-300">Dept Admin</span>
-                          <span className="block text-[9px] text-blue-400 truncate">deptadmin@revenue.gov.in</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleInlineQuickDemo('officer@health.gov.in', 'user-officer-hlt')}
-                          className="p-2 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-800/80 text-left transition-colors"
-                        >
-                          <span className="block text-[11px] font-bold text-emerald-300">Officer</span>
-                          <span className="block text-[9px] text-emerald-400 truncate">officer@health.gov.in</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleInlineQuickDemo('reviewer@pwd.gov.in', 'user-reviewer-pwd')}
-                          className="p-2 rounded-lg bg-amber-950/60 hover:bg-amber-900/60 border border-amber-800/80 text-left transition-colors"
-                        >
-                          <span className="block text-[11px] font-bold text-amber-300">Reviewer</span>
-                          <span className="block text-[9px] text-amber-400 truncate">reviewer@pwd.gov.in</span>
-                        </button>
-                      </div>
-                    </div>
                   </form>
                 )}
 

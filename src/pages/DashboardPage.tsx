@@ -206,6 +206,10 @@ export const DashboardPage: React.FC = () => {
 
           {loading ? (
             <SkeletonTable rows={4} />
+          ) : documents.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400">
+              No documents available
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -258,19 +262,23 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {auditLogs.map(log => (
-              <div key={log.id} className="flex items-start space-x-3 text-xs p-2.5 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
-                <div className="flex-1 overflow-hidden">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 dark:text-white truncate">{log.actorName}</span>
-                    <span className="text-[9px] text-slate-400">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            {auditLogs.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4">No audit activity recorded</p>
+            ) : (
+              auditLogs.map(log => (
+                <div key={log.id} className="flex items-start space-x-3 text-xs p-2.5 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 dark:text-white truncate">{log.actorName}</span>
+                      <span className="text-[9px] text-slate-400">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <p className="text-[11px] font-mono text-gov-600 dark:text-gov-400 font-semibold">{log.action}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{log.details}</p>
                   </div>
-                  <p className="text-[11px] font-mono text-gov-600 dark:text-gov-400 font-semibold">{log.action}</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{log.details}</p>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-center">

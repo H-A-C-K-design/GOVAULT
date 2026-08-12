@@ -81,22 +81,13 @@ export const DocumentUploadPage: React.FC = () => {
     if (!currentUser) return;
 
     setIsUploading(true);
-    setUploadProgress(20);
+    setUploadProgress(30);
 
     const selectedDept = departments.find(d => d.id === data.departmentId);
 
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 90;
-        }
-        return prev + 25;
-      });
-    }, 200);
-
     try {
       const tagList = data.tags.split(',').map(t => t.trim()).filter(Boolean);
+      setUploadProgress(60);
       
       const newDoc = await DataService.createDocument({
         title: data.title,
@@ -110,20 +101,17 @@ export const DocumentUploadPage: React.FC = () => {
         fileName: file.name,
         fileSize: file.size,
         mimeType: file.type || 'application/pdf',
+        fileBlob: file,
         effectiveDate: data.effectiveDate
       }, currentUser);
 
-      clearInterval(interval);
       setUploadProgress(100);
-      setTimeout(() => {
-        setIsUploading(false);
-        navigate(`/documents/${newDoc.id}`);
-      }, 400);
+      setIsUploading(false);
+      navigate(`/documents/${newDoc.id}`);
 
     } catch (err: any) {
-      clearInterval(interval);
       setIsUploading(false);
-      setFileError(err.message || 'Document upload failed.');
+      setFileError(err.message || 'Document upload failed. Please try again.');
     }
   };
 

@@ -11,16 +11,7 @@ import type {
   DocumentStatus,
   SystemStatusInfo
 } from '../types';
-import { 
-  INITIAL_DEPARTMENTS, 
-  DEMO_USERS, 
-  INITIAL_DOCUMENTS, 
-  INITIAL_VERSIONS, 
-  INITIAL_WORKFLOWS, 
-  INITIAL_AUDIT_LOGS, 
-  INITIAL_NOTIFICATIONS 
-} from './mockData';
-import { db, auth } from './firebase';
+import { db, auth, storage } from './firebase';
 import { 
   doc, 
   setDoc, 
@@ -30,7 +21,7 @@ import {
   updateDoc 
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const LOCAL_STORAGE_KEYS = {
   USERS: 'govdoc_users_v1',
@@ -43,21 +34,18 @@ const LOCAL_STORAGE_KEYS = {
   CURRENT_USER: 'govdoc_current_user_v1'
 };
 
-function loadStorage<T>(key: string, defaultData: T): T {
+function loadStorage<T>(key: string): T[] {
   try {
     const item = localStorage.getItem(key);
-    if (!item) {
-      localStorage.setItem(key, JSON.stringify(defaultData));
-      return defaultData;
-    }
-    return JSON.parse(item) as T;
+    if (!item) return [];
+    return JSON.parse(item) as T[];
   } catch (err) {
     console.warn(`[GovDoc Storage] Error reading ${key}`, err);
-    return defaultData;
+    return [];
   }
 }
 
-function saveStorage<T>(key: string, data: T): void {
+function saveStorage<T>(key: string, data: T[]): void {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (err) {
@@ -67,7 +55,7 @@ function saveStorage<T>(key: string, data: T): void {
 
 export class DataService {
   private static getUsers(): UserProfile[] {
-    return loadStorage<UserProfile[]>(LOCAL_STORAGE_KEYS.USERS, DEMO_USERS);
+    return loadStorage<UserProfile>(LOCAL_STORAGE_KEYS.USERS);
   }
 
   private static setUsers(users: UserProfile[]): void {
@@ -75,7 +63,7 @@ export class DataService {
   }
 
   private static getDepartments(): Department[] {
-    return loadStorage<Department[]>(LOCAL_STORAGE_KEYS.DEPARTMENTS, INITIAL_DEPARTMENTS);
+    return loadStorage<Department>(LOCAL_STORAGE_KEYS.DEPARTMENTS);
   }
 
   private static setDepartments(depts: Department[]): void {
@@ -83,7 +71,7 @@ export class DataService {
   }
 
   private static getDocuments(): GovernmentDocument[] {
-    return loadStorage<GovernmentDocument[]>(LOCAL_STORAGE_KEYS.DOCUMENTS, INITIAL_DOCUMENTS);
+    return loadStorage<GovernmentDocument>(LOCAL_STORAGE_KEYS.DOCUMENTS);
   }
 
   private static setDocuments(docs: GovernmentDocument[]): void {
@@ -91,7 +79,7 @@ export class DataService {
   }
 
   private static getVersions(): DocumentVersion[] {
-    return loadStorage<DocumentVersion[]>(LOCAL_STORAGE_KEYS.VERSIONS, INITIAL_VERSIONS);
+    return loadStorage<DocumentVersion>(LOCAL_STORAGE_KEYS.VERSIONS);
   }
 
   private static setVersions(versions: DocumentVersion[]): void {
@@ -99,7 +87,7 @@ export class DataService {
   }
 
   private static getWorkflows(): ApprovalWorkflowStep[] {
-    return loadStorage<ApprovalWorkflowStep[]>(LOCAL_STORAGE_KEYS.WORKFLOWS, INITIAL_WORKFLOWS);
+    return loadStorage<ApprovalWorkflowStep>(LOCAL_STORAGE_KEYS.WORKFLOWS);
   }
 
   private static setWorkflows(wfs: ApprovalWorkflowStep[]): void {
@@ -107,7 +95,7 @@ export class DataService {
   }
 
   private static getAuditLogs(): AuditLog[] {
-    return loadStorage<AuditLog[]>(LOCAL_STORAGE_KEYS.AUDIT_LOGS, INITIAL_AUDIT_LOGS);
+    return loadStorage<AuditLog>(LOCAL_STORAGE_KEYS.AUDIT_LOGS);
   }
 
   private static setAuditLogs(logs: AuditLog[]): void {
@@ -115,13 +103,14 @@ export class DataService {
   }
 
   private static getNotifications(): SystemNotification[] {
-    return loadStorage<SystemNotification[]>(LOCAL_STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
+    return loadStorage<SystemNotification>(LOCAL_STORAGE_KEYS.NOTIFICATIONS);
   }
 
   private static setNotifications(notifs: SystemNotification[]): void {
     saveStorage(LOCAL_STORAGE_KEYS.NOTIFICATIONS, notifs);
   }
 
+  // Audit Logs
   public static async logAuditEvent(event: Omit<AuditLog, 'id' | 'timestamp'>): Promise<void> {
     const logs = this.getAuditLogs();
     const newLog: AuditLog = {
@@ -135,7 +124,7 @@ export class DataService {
     try {
       await setDoc(doc(db, 'audit_logs', newLog.id), newLog);
     } catch (err) {
-      console.warn('[Firestore] Notice: Audit log saved locally', err);
+      console.warn('[Firestore] Audit log saved locally', err);
     }
   }
 
@@ -173,6 +162,7 @@ export class DataService {
     return logs;
   }
 
+  // User Profiles
   public static async getUserProfile(uid: string): Promise<UserProfile | null> {
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
@@ -203,7 +193,7 @@ export class DataService {
         return merged;
       }
     } catch (err) {
-      console.warn('[Firestore] Notice: Serving users from local cache', err);
+      console.warn('[Firestore] Notice: Serving users from cache', err);
     }
     return localUsers;
   }
@@ -247,18 +237,21 @@ export class DataService {
       throw new Error("An officer account with this official email already exists.");
     }
 
-    const newUid = `user-off-${Date.now()}`;
+    let authUid = `user-off-${Date.now()}`;
 
     if (data.password) {
       try {
-        await createUserWithEmailAndPassword(auth, data.officialEmail, data.password);
+        const userCredential = await createUserWithEmailAndPassword(auth, data.officialEmail, data.password);
+        if (userCredential.user?.uid) {
+          authUid = userCredential.user.uid;
+        }
       } catch (authErr: any) {
         console.warn('[Firebase Auth] Notice:', authErr?.message || authErr);
       }
     }
 
     const newUser: UserProfile = {
-      uid: newUid,
+      uid: authUid,
       fullName: data.fullName,
       officialEmail: data.officialEmail,
       employeeId: data.employeeId,
@@ -272,7 +265,7 @@ export class DataService {
       reportingOfficer: data.reportingOfficer,
       role: 'officer',
       accountStatus: 'pending',
-      emailVerified: true,
+      emailVerified: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -308,7 +301,7 @@ export class DataService {
     adminUser: UserProfile, 
     rejectionReason?: string
   ): Promise<UserProfile> {
-    const users = this.getUsers();
+    const users = await this.getAllUsers();
     const index = users.findIndex(u => u.uid === targetUid);
     if (index === -1) throw new Error("Officer not found");
 
@@ -331,20 +324,27 @@ export class DataService {
       console.warn('[Firestore] Notice: Status updated locally', err);
     }
 
-
-    const notifs = this.getNotifications();
-    notifs.unshift({
+    const notif: SystemNotification = {
       id: `notif-${Date.now()}`,
       userId: targetUid,
       title: `Registration Request ${newStatus.toUpperCase()}`,
       message: newStatus === 'approved' 
-        ? 'Your officer registration has been approved. You now have full access to GovDoc.' 
+        ? 'Your officer registration has been approved. You now have access to GovDoc.' 
         : `Your registration request was ${newStatus}. ${rejectionReason ? 'Reason: ' + rejectionReason : ''}`,
       type: 'registration',
       read: false,
       createdAt: new Date().toISOString()
-    });
+    };
+
+    const notifs = this.getNotifications();
+    notifs.unshift(notif);
     this.setNotifications(notifs);
+
+    try {
+      await setDoc(doc(db, 'notifications', notif.id), notif);
+    } catch (err) {
+      console.warn('[Firestore] Saved notification locally', err);
+    }
 
     await this.logAuditEvent({
       actorId: adminUser.uid,
@@ -366,13 +366,23 @@ export class DataService {
     newRole: UserRole, 
     adminUser: UserProfile
   ): Promise<UserProfile> {
-    const users = this.getUsers();
+    const users = await this.getAllUsers();
     const index = users.findIndex(u => u.uid === targetUid);
     if (index === -1) throw new Error("Officer not found");
 
+    const now = new Date().toISOString();
     users[index].role = newRole;
-    users[index].updatedAt = new Date().toISOString();
+    users[index].updatedAt = now;
     this.setUsers(users);
+
+    try {
+      await updateDoc(doc(db, 'users', targetUid), {
+        role: newRole,
+        updatedAt: now
+      });
+    } catch (err) {
+      console.warn('[Firestore] Notice: Role updated locally', err);
+    }
 
     await this.logAuditEvent({
       actorId: adminUser.uid,
@@ -389,8 +399,24 @@ export class DataService {
     return users[index];
   }
 
+  // Departments
   public static async getDepartmentsList(): Promise<Department[]> {
-    return this.getDepartments();
+    let depts = this.getDepartments();
+    try {
+      const snap = await getDocs(collection(db, 'departments'));
+      if (!snap.empty) {
+        const firestoreDepts: Department[] = [];
+        snap.forEach(d => firestoreDepts.push(d.data() as Department));
+        const deptMap = new Map<string, Department>();
+        depts.forEach(d => deptMap.set(d.id, d));
+        firestoreDepts.forEach(d => deptMap.set(d.id, d));
+        depts = Array.from(deptMap.values());
+        this.setDepartments(depts);
+      }
+    } catch (err) {
+      console.warn('[Firestore] Notice: Fetching local departments', err);
+    }
+    return depts;
   }
 
   public static async createDepartment(data: {
@@ -398,7 +424,7 @@ export class DataService {
     code: string;
     description: string;
   }, adminUser: UserProfile): Promise<Department> {
-    const depts = this.getDepartments();
+    const depts = await this.getDepartmentsList();
     const newDept: Department = {
       id: `dept-${data.code.toLowerCase()}-${Date.now()}`,
       name: data.name,
@@ -415,6 +441,12 @@ export class DataService {
     depts.push(newDept);
     this.setDepartments(depts);
 
+    try {
+      await setDoc(doc(db, 'departments', newDept.id), newDept);
+    } catch (err) {
+      console.warn('[Firestore] Saved department locally', err);
+    }
+
     await this.logAuditEvent({
       actorId: adminUser.uid,
       actorName: adminUser.fullName,
@@ -430,6 +462,7 @@ export class DataService {
     return newDept;
   }
 
+  // Documents
   public static async getDocumentsList(filter?: {
     departmentId?: string;
     category?: string;
@@ -438,6 +471,21 @@ export class DataService {
     ownerId?: string;
   }): Promise<GovernmentDocument[]> {
     let docs = this.getDocuments();
+
+    try {
+      const snap = await getDocs(collection(db, 'documents'));
+      if (!snap.empty) {
+        const firestoreDocs: GovernmentDocument[] = [];
+        snap.forEach(d => firestoreDocs.push(d.data() as GovernmentDocument));
+        const docMap = new Map<string, GovernmentDocument>();
+        docs.forEach(d => docMap.set(d.id, d));
+        firestoreDocs.forEach(d => docMap.set(d.id, d));
+        docs = Array.from(docMap.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        this.setDocuments(docs);
+      }
+    } catch (err) {
+      console.warn('[Firestore] Notice: Fetching documents from cache', err);
+    }
 
     if (filter?.departmentId && filter.departmentId !== 'all') {
       docs = docs.filter(d => d.departmentId === filter.departmentId);
@@ -456,7 +504,7 @@ export class DataService {
       docs = docs.filter(d => 
         d.title.toLowerCase().includes(q) ||
         d.documentNumber.toLowerCase().includes(q) ||
-        d.tags.some(t => t.toLowerCase().includes(q)) ||
+        (d.tags && d.tags.some(t => t.toLowerCase().includes(q))) ||
         d.departmentName.toLowerCase().includes(q)
       );
     }
@@ -464,6 +512,14 @@ export class DataService {
   }
 
   public static async getDocumentById(id: string): Promise<GovernmentDocument | null> {
+    try {
+      const docSnap = await getDoc(doc(db, 'documents', id));
+      if (docSnap.exists()) {
+        return docSnap.data() as GovernmentDocument;
+      }
+    } catch (err) {
+      console.warn('[Firestore] Notice: Checking local document cache', err);
+    }
     const docs = this.getDocuments();
     return docs.find(d => d.id === id) || null;
   }
@@ -481,19 +537,30 @@ export class DataService {
       fileName: string;
       fileSize: number;
       mimeType: string;
+      fileBlob?: Blob | File;
       effectiveDate?: string;
       assignedReviewerId?: string;
     },
     currentUser: UserProfile
   ): Promise<GovernmentDocument> {
-    const docs = this.getDocuments();
-    const depts = this.getDepartments();
+    const docs = await this.getDocumentsList();
+    const depts = await this.getDepartmentsList();
 
     const deptCode = depts.find(d => d.id === data.departmentId)?.code || 'GOV';
     const docNum = `DOC-2026-${deptCode}-${Math.floor(100 + Math.random() * 900)}`;
-
     const newDocId = `doc-${deptCode.toLowerCase()}-${Date.now()}`;
     const storagePath = `documents/${data.departmentId}/${newDocId}/version-1/${data.fileName}`;
+
+    let uploadedFileUrl = '';
+    if (data.fileBlob) {
+      try {
+        const storageRef = ref(storage, storagePath);
+        await uploadBytes(storageRef, data.fileBlob);
+        uploadedFileUrl = await getDownloadURL(storageRef);
+      } catch (err) {
+        console.warn('[Firebase Storage] Notice: File upload stored metadata', err);
+      }
+    }
 
     const newDoc: GovernmentDocument = {
       id: newDocId,
@@ -511,7 +578,7 @@ export class DataService {
       ownerEmail: currentUser.officialEmail,
       currentVersion: 1,
       storagePath: storagePath,
-      fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      fileUrl: uploadedFileUrl,
       fileName: data.fileName,
       fileSize: data.fileSize,
       mimeType: data.mimeType,
@@ -527,8 +594,13 @@ export class DataService {
     docs.unshift(newDoc);
     this.setDocuments(docs);
 
-    const versions = this.getVersions();
-    versions.unshift({
+    try {
+      await setDoc(doc(db, 'documents', newDoc.id), newDoc);
+    } catch (err) {
+      console.warn('[Firestore] Saved document locally', err);
+    }
+
+    const newVersion: DocumentVersion = {
       id: `ver-${newDocId}-v1`,
       documentId: newDocId,
       versionNumber: 1,
@@ -540,11 +612,19 @@ export class DataService {
       uploadedBy: currentUser.uid,
       uploadedByName: currentUser.fullName,
       createdAt: new Date().toISOString()
-    });
+    };
+
+    const versions = this.getVersions();
+    versions.unshift(newVersion);
     this.setVersions(versions);
 
-    const workflows = this.getWorkflows();
-    workflows.unshift({
+    try {
+      await setDoc(doc(db, 'document_versions', newVersion.id), newVersion);
+    } catch (err) {
+      console.warn('[Firestore] Saved version locally', err);
+    }
+
+    const newWorkflow: ApprovalWorkflowStep = {
       id: `wf-${newDocId}-1`,
       documentId: newDocId,
       stage: 'Uploaded',
@@ -555,13 +635,16 @@ export class DataService {
       remarks: 'Document created and submitted to verification workflow.',
       timestamp: new Date().toISOString(),
       versionNumber: 1
-    });
+    };
+
+    const workflows = this.getWorkflows();
+    workflows.unshift(newWorkflow);
     this.setWorkflows(workflows);
 
-    const dIndex = depts.findIndex(d => d.id === data.departmentId);
-    if (dIndex !== -1) {
-      depts[dIndex].documentCount += 1;
-      this.setDepartments(depts);
+    try {
+      await setDoc(doc(db, 'workflows', newWorkflow.id), newWorkflow);
+    } catch (err) {
+      console.warn('[Firestore] Saved workflow locally', err);
     }
 
     await this.logAuditEvent({
@@ -585,18 +668,28 @@ export class DataService {
     remarks: string,
     actor: UserProfile
   ): Promise<GovernmentDocument> {
-    const docs = this.getDocuments();
+    const docs = await this.getDocumentsList();
     const index = docs.findIndex(d => d.id === docId);
     if (index === -1) throw new Error("Document not found");
 
     const oldStatus = docs[index].status;
+    const now = new Date().toISOString();
     docs[index].status = newStatus;
     docs[index].remarks = remarks;
-    docs[index].updatedAt = new Date().toISOString();
+    docs[index].updatedAt = now;
 
     this.setDocuments(docs);
 
-    const workflows = this.getWorkflows();
+    try {
+      await updateDoc(doc(db, 'documents', docId), {
+        status: newStatus,
+        remarks: remarks,
+        updatedAt: now
+      });
+    } catch (err) {
+      console.warn('[Firestore] Updated document status locally', err);
+    }
+
     const stageMap: Record<DocumentStatus, ApprovalWorkflowStep['stage']> = {
       'Draft': 'Uploaded',
       'Submitted': 'Verification',
@@ -617,7 +710,7 @@ export class DataService {
       'Archived': 'approved'
     };
 
-    workflows.unshift({
+    const newWf: ApprovalWorkflowStep = {
       id: `wf-${docId}-${Date.now()}`,
       documentId: docId,
       stage: stageMap[newStatus] || 'Review',
@@ -626,13 +719,21 @@ export class DataService {
       actorRole: actor.role,
       action: actionMap[newStatus] || 'under_review',
       remarks,
-      timestamp: new Date().toISOString(),
+      timestamp: now,
       versionNumber: docs[index].currentVersion
-    });
+    };
+
+    const workflows = this.getWorkflows();
+    workflows.unshift(newWf);
     this.setWorkflows(workflows);
 
-    const notifs = this.getNotifications();
-    notifs.unshift({
+    try {
+      await setDoc(doc(db, 'workflows', newWf.id), newWf);
+    } catch (err) {
+      console.warn('[Firestore] Saved workflow locally', err);
+    }
+
+    const notif: SystemNotification = {
       id: `notif-${Date.now()}`,
       userId: docs[index].ownerId,
       title: `Document ${newStatus}`,
@@ -640,9 +741,18 @@ export class DataService {
       type: 'approval',
       read: false,
       link: `/documents/${docId}`,
-      createdAt: new Date().toISOString()
-    });
+      createdAt: now
+    };
+
+    const notifs = this.getNotifications();
+    notifs.unshift(notif);
     this.setNotifications(notifs);
+
+    try {
+      await setDoc(doc(db, 'notifications', notif.id), notif);
+    } catch (err) {
+      console.warn('[Firestore] Saved notification locally', err);
+    }
 
     await this.logAuditEvent({
       actorId: actor.uid,
@@ -660,17 +770,59 @@ export class DataService {
   }
 
   public static async getDocumentVersions(docId: string): Promise<DocumentVersion[]> {
-    const versions = this.getVersions();
+    let versions = this.getVersions();
+    try {
+      const snap = await getDocs(collection(db, 'document_versions'));
+      if (!snap.empty) {
+        const firestoreVersions: DocumentVersion[] = [];
+        snap.forEach(d => firestoreVersions.push(d.data() as DocumentVersion));
+        const verMap = new Map<string, DocumentVersion>();
+        versions.forEach(v => verMap.set(v.id, v));
+        firestoreVersions.forEach(v => verMap.set(v.id, v));
+        versions = Array.from(verMap.values());
+        this.setVersions(versions);
+      }
+    } catch (err) {
+      console.warn('[Firestore] Notice: Fetching local versions', err);
+    }
     return versions.filter(v => v.documentId === docId).sort((a, b) => b.versionNumber - a.versionNumber);
   }
 
   public static async getDocumentWorkflows(docId: string): Promise<ApprovalWorkflowStep[]> {
-    const workflows = this.getWorkflows();
+    let workflows = this.getWorkflows();
+    try {
+      const snap = await getDocs(collection(db, 'workflows'));
+      if (!snap.empty) {
+        const firestoreWfs: ApprovalWorkflowStep[] = [];
+        snap.forEach(d => firestoreWfs.push(d.data() as ApprovalWorkflowStep));
+        const wfMap = new Map<string, ApprovalWorkflowStep>();
+        workflows.forEach(w => wfMap.set(w.id, w));
+        firestoreWfs.forEach(w => wfMap.set(w.id, w));
+        workflows = Array.from(wfMap.values());
+        this.setWorkflows(workflows);
+      }
+    } catch (err) {
+      console.warn('[Firestore] Notice: Fetching local workflows', err);
+    }
     return workflows.filter(w => w.documentId === docId);
   }
 
   public static async getUserNotifications(userId: string): Promise<SystemNotification[]> {
-    const notifs = this.getNotifications();
+    let notifs = this.getNotifications();
+    try {
+      const snap = await getDocs(collection(db, 'notifications'));
+      if (!snap.empty) {
+        const firestoreNotifs: SystemNotification[] = [];
+        snap.forEach(d => firestoreNotifs.push(d.data() as SystemNotification));
+        const notifMap = new Map<string, SystemNotification>();
+        notifs.forEach(n => notifMap.set(n.id, n));
+        firestoreNotifs.forEach(n => notifMap.set(n.id, n));
+        notifs = Array.from(notifMap.values());
+        this.setNotifications(notifs);
+      }
+    } catch (err) {
+      console.warn('[Firestore] Notice: Fetching local notifications', err);
+    }
     return notifs.filter(n => n.userId === userId);
   }
 
@@ -681,21 +833,51 @@ export class DataService {
       notifs[index].read = true;
       this.setNotifications(notifs);
     }
+    try {
+      await updateDoc(doc(db, 'notifications', notifId), { read: true });
+    } catch (err) {
+      console.warn('[Firestore] Marked notification read locally', err);
+    }
   }
 
   public static async getSystemStatusInfo(): Promise<SystemStatusInfo> {
-    const users = this.getUsers();
-    const docs = this.getDocuments();
+    const users = await this.getAllUsers();
+    const docs = await this.getDocumentsList();
+
+    let dbOperational = false;
+    let authOperational = false;
+    let storageOperational = false;
+
+    try {
+      await getDocs(collection(db, 'users'));
+      dbOperational = true;
+    } catch {
+      dbOperational = false;
+    }
+
+    try {
+      authOperational = Boolean(auth.app);
+    } catch {
+      authOperational = false;
+    }
+
+    try {
+      storageOperational = Boolean(storage.app);
+    } catch {
+      storageOperational = false;
+    }
+
+    const isAllOk = dbOperational && authOperational && storageOperational;
 
     return {
-      authStatus: 'operational',
-      databaseStatus: 'operational',
-      storageStatus: 'operational',
+      authStatus: authOperational ? 'operational' : 'degraded',
+      databaseStatus: dbOperational ? 'operational' : 'degraded',
+      storageStatus: storageOperational ? 'operational' : 'degraded',
       appStatus: 'operational',
-      overallStatus: 'operational',
+      overallStatus: isAllOk ? 'operational' : 'degraded',
       activeOfficers: users.filter(u => u.accountStatus === 'approved').length,
       totalDocuments: docs.length,
-      storageUsedMB: 142.8,
+      storageUsedMB: docs.reduce((acc, d) => acc + (d.fileSize || 0), 0) / (1024 * 1024),
       port: 443,
       protocol: 'HTTPS/TLS',
       lastChecked: new Date().toISOString()

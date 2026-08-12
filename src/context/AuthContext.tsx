@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { UserProfile, UserRole } from '../types';
 import { DataService } from '../services/dataService';
-
+import { auth } from '../services/firebase';
+import { signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
 
 interface AuthContextType {
   currentUser: UserProfile | null;
@@ -9,7 +10,6 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<UserProfile>;
   logout: () => Promise<void>;
   register: (data: Parameters<typeof DataService.registerOfficerRequest>[0]) => Promise<UserProfile>;
-  switchDemoUser: (uid: string) => Promise<UserProfile>;
   hasRole: (roles: UserRole | UserRole[]) => boolean;
 }
 
@@ -45,14 +45,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (email: string, _pass: string): Promise<UserProfile> => {
+  const login = async (email: string, pass: string): Promise<UserProfile> => {
     setLoading(true);
     try {
+      if (pass) {
+        try {
+          await signInWithEmailAndPassword(auth, email, pass);
+        } catch (authErr: any) {
+          console.warn('[Firebase Auth] Sign in check notice:', authErr?.message || authErr);
+        }
+      }
+
       const allUsers = await DataService.getAllUsers();
       const matched = allUsers.find(u => u.officialEmail.toLowerCase() === email.toLowerCase());
 
       if (!matched) {
-        throw new Error("Invalid official credentials or email domain unregistered.");
+        throw new Error("Invalid official credentials or email address unregistered.");
       }
 
       if (matched.accountStatus === 'pending') {
@@ -102,20 +110,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         result: 'success'
       });
     }
+    try {
+      await firebaseSignOut(auth);
+    } catch {
+      // Ignored if auth not signed in
+    }
     setCurrentUser(null);
     localStorage.removeItem('govdoc_current_user_uid');
   };
 
   const register = async (data: Parameters<typeof DataService.registerOfficerRequest>[0]): Promise<UserProfile> => {
     return await DataService.registerOfficerRequest(data);
-  };
-
-  const switchDemoUser = async (uid: string): Promise<UserProfile> => {
-    const profile = await DataService.getUserProfile(uid);
-    if (!profile) throw new Error("Demo user not found");
-    setCurrentUser(profile);
-    localStorage.setItem('govdoc_current_user_uid', profile.uid);
-    return profile;
   };
 
   const hasRole = (roles: UserRole | UserRole[]): boolean => {
@@ -131,7 +136,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       logout,
       register,
-      switchDemoUser,
       hasRole
     }}>
       {children}
