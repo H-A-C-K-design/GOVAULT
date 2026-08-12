@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, LogIn, UserPlus, LayoutDashboard, LogOut } from 'lucide-react';
+import { LogIn, UserPlus, LayoutDashboard, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const Navbar: React.FC = () => {
@@ -19,9 +19,11 @@ export const Navbar: React.FC = () => {
           
           {/* Logo & Identity */}
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-gov-600 to-indigo-600 flex items-center justify-center text-white shadow-md border border-gov-400/30 group-hover:scale-105 transition-transform">
-              <Shield className="w-6 h-6" />
-            </div>
+            <img 
+              src="/gov_seal.jpg" 
+              alt="Government of India Seal" 
+              className="w-11 h-11 rounded-full object-cover shadow-lg border border-amber-500/50 group-hover:scale-105 transition-transform" 
+            />
             <div>
               <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
                 GOVAULT
