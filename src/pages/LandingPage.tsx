@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Shield, 
   Lock, 
@@ -13,99 +13,12 @@ import {
   Cloud, 
   LogIn,
   Workflow,
-  Mail,
-  AlertCircle,
-  Eye,
-  EyeOff,
   UserPlus
 } from 'lucide-react';
 import { Navbar } from '../components/layout/Navbar';
 import { motion } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
-import { DataService } from '../services/dataService';
-import type { Department } from '../types';
 
 export const LandingPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { login, register: registerAuth } = useAuth();
-
-  // Tab state: 'login' | 'register'
-  const [activeAuthTab, setActiveAuthTab] = useState<'login' | 'register'>('login');
-  
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-  // Register form state
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [regFullName, setRegFullName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regEmpId, setRegEmpId] = useState('');
-  const [regDeptId, setRegDeptId] = useState('');
-  const [regDesignation, setRegDesignation] = useState('');
-  const [regBranch, setRegBranch] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regError, setRegError] = useState<string | null>(null);
-  const [regSuccess, setRegSuccess] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-
-  useEffect(() => {
-    DataService.getDepartmentsList().then(setDepartments);
-  }, []);
-
-  const handleInlineLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError(null);
-    if (!loginEmail || !loginPassword) {
-      setLoginError("Please enter your official email and password.");
-      return;
-    }
-    setIsLoggingIn(true);
-    try {
-      await login(loginEmail, loginPassword);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setLoginError(err.message || "Login failed. Check your official credentials.");
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  const handleInlineRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setRegError(null);
-    if (!regFullName || !regEmail || !regEmpId || !regDeptId || !regDesignation || !regBranch || !regPassword) {
-      setRegError("Please fill out all required fields.");
-      return;
-    }
-    if (regPassword.length < 8) {
-      setRegError("Password must be at least 8 characters.");
-      return;
-    }
-    setIsRegistering(true);
-    try {
-      const dept = departments.find(d => d.id === regDeptId);
-      await registerAuth({
-        fullName: regFullName,
-        officialEmail: regEmail,
-        employeeId: regEmpId,
-        departmentId: regDeptId,
-        departmentName: dept?.name || 'Government Office',
-        designation: regDesignation,
-        officeBranch: regBranch,
-        password: regPassword
-      });
-      setRegSuccess(true);
-    } catch (err: any) {
-      setRegError(err.message || "Registration failed. Please try again.");
-    } finally {
-      setIsRegistering(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-gov-500 selection:text-white">
       <Navbar />
@@ -116,7 +29,7 @@ export const LandingPage: React.FC = () => {
         <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -174,253 +87,92 @@ export const LandingPage: React.FC = () => {
               <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2 text-left hidden sm:block">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-gov-400">STATE GOVERNANCE DIRECTORY</span>
-                  <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded">FIRESTORE CONNECTED</span>
+                  <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded font-bold uppercase">LIVE FIRESTORE DATABASE</span>
                 </div>
                 <p className="text-xs text-slate-400">
-                  Officer user profiles, authentication sessions, and document revision logs are securely stored on Firebase Cloud Infrastructure.
+                  Officer user profiles, authentication sessions, and document revision logs are securely managed on Cloud Infrastructure.
                 </p>
               </div>
             </motion.div>
 
-            {/* Embedded Officer Access & Registration Card */}
+            {/* Enterprise Governance Showcase Card */}
             <motion.div 
-              id="homepage-auth-portal"
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.7, delay: 0.1 }}
               className="lg:col-span-6"
             >
-              <div className="rounded-2xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 p-5 sm:p-6 border border-gov-500/30 shadow-2xl backdrop-blur-xl space-y-5">
+              <div className="rounded-2xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 p-6 sm:p-8 border border-gov-500/30 shadow-2xl backdrop-blur-xl space-y-6">
                 
-                {/* Official Government Header */}
-                <div className="flex items-center justify-between pb-3.5 border-b border-slate-800/80">
+                {/* Official Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
                   <div className="flex items-center space-x-3">
                     <img 
                       src="/gov_logo.png" 
                       alt="Government Seal" 
-                      className="w-10 h-10 rounded-xl object-cover border border-amber-500/40 shadow-md bg-slate-950 p-0.5" 
+                      className="w-12 h-12 rounded-xl object-cover border border-amber-500/40 shadow-md bg-slate-950 p-0.5" 
                     />
                     <div>
-                      <h3 className="font-extrabold text-sm text-white tracking-tight flex items-center gap-1.5">
+                      <h3 className="font-extrabold text-base text-white tracking-tight flex items-center gap-2">
                         <span>Government of India</span>
-                        <span className="text-[9px] font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded">Official</span>
+                        <span className="text-[9px] font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded">Official Seal</span>
                       </h3>
-                      <p className="text-[10px] text-slate-400 font-medium">Smart Digital Documentation Portal</p>
+                      <p className="text-xs text-slate-400 font-medium">Smart Digital Documentation System</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-950 border border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setActiveAuthTab('login')}
-                    className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
-                      activeAuthTab === 'login'
-                        ? 'bg-gov-600 text-white shadow'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
+                {/* Platform Pillars */}
+                <div className="space-y-3">
+                  <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start space-x-3">
+                    <div className="p-2 rounded-lg bg-gov-600/30 text-gov-300 shrink-0 border border-gov-500/30 mt-0.5">
+                      <Lock className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">Encrypted Document Vault</h4>
+                      <p className="text-[11px] text-slate-300">HTTPS Port 443 restricted socket with AES-256 binary document encryption.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start space-x-3">
+                    <div className="p-2 rounded-lg bg-indigo-600/30 text-indigo-300 shrink-0 border border-indigo-500/30 mt-0.5">
+                      <Workflow className="w-4 h-4 text-indigo-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">Department Sign-off Workflows</h4>
+                      <p className="text-[11px] text-slate-300">Multi-stage review, verification, and digital authorization workflows.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start space-x-3">
+                    <div className="p-2 rounded-lg bg-purple-600/30 text-purple-300 shrink-0 border border-purple-500/30 mt-0.5">
+                      <ShieldAlert className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">Immutable Audit Trail</h4>
+                      <p className="text-[11px] text-slate-300">Append-only audit logs capturing officer actions, uploads, and approvals.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Direct Action Portal CTAs */}
+                <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Link
+                    to="/login"
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-gov-600 to-indigo-600 hover:from-gov-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg transition-all border border-gov-400/30 flex items-center justify-center space-x-2"
                   >
-                    <FileText className="w-3.5 h-3.5" />
+                    <LogIn className="w-4 h-4" />
                     <span>Officer Sign In</span>
-                  </button>
+                  </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => setActiveAuthTab('register')}
-                    className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${
-                      activeAuthTab === 'register'
-                        ? 'bg-indigo-600 text-white shadow'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
+                  <Link
+                    to="/register"
+                    className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 hover:border-slate-600 transition-all flex items-center justify-center space-x-2"
                   >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>Register Officer</span>
-                  </button>
+                    <UserPlus className="w-4 h-4 text-gov-400" />
+                    <span>Register New Officer</span>
+                  </Link>
                 </div>
-
-                {/* TAB 1: LOGIN FORM */}
-                {activeAuthTab === 'login' && (
-                  <form onSubmit={handleInlineLogin} className="space-y-4 pt-1">
-                    {loginError && (
-                      <div className="p-3 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-200 text-xs flex items-start space-x-2">
-                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                        <span>{loginError}</span>
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">Official Email Address</label>
-                      <div className="relative">
-                        <input
-                          type="email"
-                          value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
-                          placeholder="e.g. admin@gov.in"
-                          className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
-                        />
-                        <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">Password</label>
-                      <div className="relative">
-                        <input
-                          type={showLoginPassword ? 'text' : 'password'}
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
-                          placeholder="••••••••••••"
-                          className="w-full pl-9 pr-10 py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
-                        />
-                        <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-                        <button
-                          type="button"
-                          onClick={() => setShowLoginPassword(!showLoginPassword)}
-                          className="absolute right-3 top-3 text-slate-400 hover:text-slate-200"
-                        >
-                          {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isLoggingIn}
-                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-gov-600 to-indigo-600 hover:from-gov-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg transition-all border border-gov-400/30 flex items-center justify-center space-x-2"
-                    >
-                      <span>{isLoggingIn ? 'Authenticating with Firestore...' : 'Sign In to Portal'}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </form>
-                )}
-
-                {/* TAB 2: REGISTER FORM */}
-                {activeAuthTab === 'register' && (
-                  <div>
-                    {regSuccess ? (
-                      <div className="p-5 rounded-xl bg-emerald-950/80 border border-emerald-800 text-center space-y-3">
-                        <div className="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-md">
-                          <CheckCircle2 className="w-6 h-6" />
-                        </div>
-                        <h4 className="text-sm font-bold text-white">Registration Submitted to Firestore!</h4>
-                        <p className="text-xs text-slate-300 leading-normal">
-                          Your application has been stored in Firestore. Account status is <span className="font-bold text-amber-400">PENDING</span> administrative review.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setRegSuccess(false);
-                            setActiveAuthTab('login');
-                          }}
-                          className="px-4 py-2 rounded-lg bg-gov-600 hover:bg-gov-500 text-white font-bold text-xs"
-                        >
-                          Switch to Officer Login
-                        </button>
-                      </div>
-                    ) : (
-                      <form onSubmit={handleInlineRegister} className="space-y-3">
-                        {regError && (
-                          <div className="p-2.5 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-200 text-xs flex items-start space-x-2">
-                            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                            <span>{regError}</span>
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          <div>
-                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Full Name *</label>
-                            <input
-                              type="text"
-                              value={regFullName}
-                              onChange={(e) => setRegFullName(e.target.value)}
-                              placeholder="Dr. Rajesh Sharma"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Official Email *</label>
-                            <input
-                              type="email"
-                              value={regEmail}
-                              onChange={(e) => setRegEmail(e.target.value)}
-                              placeholder="officer@revenue.gov.in"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Employee ID *</label>
-                            <input
-                              type="text"
-                              value={regEmpId}
-                              onChange={(e) => setRegEmpId(e.target.value)}
-                              placeholder="EMP-REV-104"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Department *</label>
-                            <select
-                              value={regDeptId}
-                              onChange={(e) => setRegDeptId(e.target.value)}
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
-                            >
-                              <option value="">Select Dept...</option>
-                              {departments.map(d => (
-                                <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Designation *</label>
-                            <input
-                              type="text"
-                              value={regDesignation}
-                              onChange={(e) => setRegDesignation(e.target.value)}
-                              placeholder="Nodal Officer"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-medium text-slate-300 mb-1">Office Branch *</label>
-                            <input
-                              type="text"
-                              value={regBranch}
-                              onChange={(e) => setRegBranch(e.target.value)}
-                              placeholder="Secretariat Wing B"
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-medium text-slate-300 mb-1">Password * (min 8 chars)</label>
-                          <input
-                            type="password"
-                            value={regPassword}
-                            onChange={(e) => setRegPassword(e.target.value)}
-                            placeholder="••••••••••••"
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-gov-500 focus:outline-none"
-                          />
-                        </div>
-
-                        <button
-                          type="submit"
-                          disabled={isRegistering}
-                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-gov-600 hover:from-indigo-500 hover:to-gov-500 text-white font-bold text-xs shadow-lg transition-all border border-gov-400/30 flex items-center justify-center space-x-2"
-                        >
-                          <span>{isRegistering ? 'Registering on Firestore...' : 'Submit Officer Registration'}</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                )}
 
               </div>
             </motion.div>
