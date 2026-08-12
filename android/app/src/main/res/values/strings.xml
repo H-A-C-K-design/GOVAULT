@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GOVAULT</string>
+    <string name="title_activity_main">GOVAULT</string>
+    <string name="package_name">gov.in.govault</string>
+    <string name="custom_url_scheme">gov.in.govault</string>
+</resources>
