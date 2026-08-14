@@ -25,8 +25,21 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
   const [notifications, setNotifications] = useState<SystemNotification[]>([]);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    return document.documentElement.classList.contains('dark') || localStorage.getItem('govdoc_theme') === 'dark';
+  });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('govdoc_theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+      setIsDarkMode(true);
+    } else if (savedTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+      setIsDarkMode(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
@@ -37,8 +50,15 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
+    const nextDark = !isDarkMode;
+    setIsDarkMode(nextDark);
+    if (nextDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('govdoc_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('govdoc_theme', 'light');
+    }
   };
 
   const handleMarkAsRead = async (id: string) => {
