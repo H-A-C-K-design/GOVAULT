@@ -378,6 +378,12 @@ export class DataService {
     }
   }
 
+  public static clearLocalCache(): void {
+    Object.values(LOCAL_STORAGE_KEYS).forEach(k => {
+      localStorage.removeItem(k);
+    });
+  }
+
   public static async registerOfficerRequest(data: {
     fullName: string;
     officialEmail: string;
@@ -407,7 +413,9 @@ export class DataService {
           authUid = userCredential.user.uid;
         }
       } catch (authErr: any) {
-        console.warn('[Firebase Auth] Notice:', authErr?.message || authErr);
+        if (authErr?.code !== 'auth/email-already-in-use') {
+          console.warn('[Firebase Auth] Registration Notice:', authErr?.message || authErr);
+        }
       }
     }
 
@@ -431,14 +439,24 @@ export class DataService {
       updatedAt: new Date().toISOString()
     };
 
-    const users = this.getUsers();
-    users.push(newUser);
-    this.setUsers(users);
-
+    // Direct write to remote Firebase Firestore
     try {
       await setDoc(doc(db, 'users', newUser.uid), newUser);
-    } catch (err) {
-      console.warn('[Firestore] Saved user locally', err);
+      console.log('[Firestore] Successfully registered user in Firestore:', newUser.uid);
+    } catch (err: any) {
+      console.error('[Firestore Write Error]', err);
+      const users = this.getUsers();
+      users.push(newUser);
+      this.setUsers(users);
+      if (err?.code === 'permission-denied') {
+        throw new Error('Firestore Write Blocked (permission-denied): Please enable Firestore Rules in your Firebase Console!');
+      }
+    }
+
+    const users = this.getUsers();
+    if (!users.some(u => u.uid === newUser.uid)) {
+      users.push(newUser);
+      this.setUsers(users);
     }
 
     await this.logAuditEvent({
