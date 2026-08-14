@@ -199,6 +199,70 @@ export class DataService {
     }
   }
 
+  /**
+   * Explicitly seed all core datasets directly into remote Firebase Firestore
+   */
+  public static async forceSeedFirestore(): Promise<{ success: boolean; message: string; seededCount: number }> {
+    try {
+      let seededCount = 0;
+
+      // Seed users
+      for (const u of DEMO_USERS) {
+        await setDoc(doc(db, 'users', u.uid), u, { merge: true });
+        seededCount++;
+      }
+
+      // Seed departments
+      for (const d of INITIAL_DEPARTMENTS) {
+        await setDoc(doc(db, 'departments', d.id), d, { merge: true });
+        seededCount++;
+      }
+
+      // Seed documents
+      for (const docItem of INITIAL_DOCUMENTS) {
+        await setDoc(doc(db, 'documents', docItem.id), docItem, { merge: true });
+        seededCount++;
+      }
+
+      // Seed versions
+      for (const ver of INITIAL_VERSIONS) {
+        await setDoc(doc(db, 'document_versions', ver.id), ver, { merge: true });
+        seededCount++;
+      }
+
+      // Seed workflows
+      for (const wf of INITIAL_WORKFLOWS) {
+        await setDoc(doc(db, 'workflows', wf.id), wf, { merge: true });
+        seededCount++;
+      }
+
+      // Seed audit logs
+      for (const logItem of INITIAL_AUDIT_LOGS) {
+        await setDoc(doc(db, 'audit_logs', logItem.id), logItem, { merge: true });
+        seededCount++;
+      }
+
+      // Seed notifications
+      for (const notif of INITIAL_NOTIFICATIONS) {
+        await setDoc(doc(db, 'notifications', notif.id), notif, { merge: true });
+        seededCount++;
+      }
+
+      return {
+        success: true,
+        message: `Successfully populated 7 collections with ${seededCount} records directly in your Firebase Firestore Database!`,
+        seededCount
+      };
+    } catch (err: any) {
+      console.error('[Firestore Force Seed Error]', err);
+      return {
+        success: false,
+        message: err?.message || 'Firestore write failed. Check your Firebase console Firestore rules and project config.',
+        seededCount: 0
+      };
+    }
+  }
+
   // --- Audit Logs ---
   public static async logAuditEvent(event: Omit<AuditLog, 'id' | 'timestamp'>): Promise<void> {
     const logs = this.getAuditLogs();

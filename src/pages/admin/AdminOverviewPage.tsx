@@ -79,6 +79,17 @@ export const AdminOverviewPage: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-3">
+          <button
+            onClick={async () => {
+              const res = await DataService.forceSeedFirestore();
+              alert(res.message);
+            }}
+            className="inline-flex items-center space-x-2 px-3.5 py-2.5 rounded-xl bg-gov-600 hover:bg-gov-500 text-white font-bold text-xs shadow-md transition-all"
+            title="Push initial collections directly to your Firebase Console"
+          >
+            <span>Sync Data to Firebase Console</span>
+          </button>
+
           <Link
             to="/admin/registrations"
             className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition-all"
