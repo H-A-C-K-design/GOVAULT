@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { auth } from '../services/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 export const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
+    if (!email) return;
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (err: any) {
+      console.warn('[Firebase Auth] Password reset request notice:', err?.message || err);
+    } finally {
+      setLoading(false);
       setSubmitted(true);
     }
   };
@@ -26,7 +36,7 @@ export const ForgotPasswordPage: React.FC = () => {
         </Link>
         <h2 className="text-2xl font-extrabold text-white">Reset Official Password</h2>
         <p className="text-xs text-slate-400">
-          Enter your registered government email address to receive password reset instructions.
+          Enter your registered government email address to receive password reset instructions via Firebase Auth.
         </p>
       </div>
 
@@ -66,9 +76,10 @@ export const ForgotPasswordPage: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-3 px-4 rounded-xl bg-gov-600 hover:bg-gov-500 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center space-x-2"
+                disabled={loading}
+                className="w-full py-3 px-4 rounded-xl bg-gov-600 hover:bg-gov-500 disabled:opacity-50 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center space-x-2"
               >
-                <span>Dispatch Reset Email</span>
+                <span>{loading ? 'Dispatching Link...' : 'Dispatch Reset Email'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>

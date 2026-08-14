@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { UserProfile, UserRole } from '../types';
 import { DataService } from '../services/dataService';
 import { auth } from '../services/firebase';
-import { signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
 
 interface AuthContextType {
   currentUser: UserProfile | null;
@@ -20,8 +20,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const initAuth = async () => {
+    // Connect Firebase Auth state change listener
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       try {
+        if (fbUser) {
+          const profile = await DataService.getUserProfile(fbUser.uid);
+          if (profile && profile.accountStatus === 'approved') {
+            setCurrentUser(profile);
+            localStorage.setItem('govdoc_current_user_uid', profile.uid);
+            setLoading(false);
+            return;
+          } else if (fbUser.email) {
+            const allUsers = await DataService.getAllUsers();
+            const matched = allUsers.find(u => u.officialEmail.toLowerCase() === fbUser.email?.toLowerCase());
+            if (matched && matched.accountStatus === 'approved') {
+              setCurrentUser(matched);
+              localStorage.setItem('govdoc_current_user_uid', matched.uid);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+        
+        // Fallback to local session cache
         const savedUid = localStorage.getItem('govdoc_current_user_uid');
         if (savedUid) {
           const profile = await DataService.getUserProfile(savedUid);
@@ -35,14 +56,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCurrentUser(null);
         }
       } catch (err) {
-        console.error("Auth init error", err);
+        console.error("[AuthContext] Init error:", err);
         setCurrentUser(null);
       } finally {
         setLoading(false);
       }
-    };
+    });
 
-    initAuth();
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, pass: string): Promise<UserProfile> => {

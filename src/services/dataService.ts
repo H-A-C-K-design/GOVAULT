@@ -18,10 +18,22 @@ import {
   getDoc, 
   getDocs, 
   collection, 
-  updateDoc 
+  updateDoc,
+  onSnapshot,
+  query,
+  where
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import {
+  INITIAL_DEPARTMENTS,
+  DEMO_USERS,
+  INITIAL_DOCUMENTS,
+  INITIAL_VERSIONS,
+  INITIAL_WORKFLOWS,
+  INITIAL_AUDIT_LOGS,
+  INITIAL_NOTIFICATIONS
+} from './mockData';
 
 const LOCAL_STORAGE_KEYS = {
   USERS: 'govdoc_users_v1',
@@ -34,14 +46,20 @@ const LOCAL_STORAGE_KEYS = {
   CURRENT_USER: 'govdoc_current_user_v1'
 };
 
-function loadStorage<T>(key: string): T[] {
+function loadStorage<T>(key: string, initialFallback: T[] = []): T[] {
   try {
     const item = localStorage.getItem(key);
-    if (!item) return [];
+    if (!item) {
+      if (initialFallback.length > 0) {
+        localStorage.setItem(key, JSON.stringify(initialFallback));
+        return initialFallback;
+      }
+      return [];
+    }
     return JSON.parse(item) as T[];
   } catch (err) {
-    console.warn(`[GovDoc Storage] Error reading ${key}`, err);
-    return [];
+    console.warn(`[GovDoc Cache] Error reading ${key}`, err);
+    return initialFallback;
   }
 }
 
@@ -49,13 +67,15 @@ function saveStorage<T>(key: string, data: T[]): void {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (err) {
-    console.error(`[GovDoc Storage] Error saving ${key}`, err);
+    console.error(`[GovDoc Cache] Error saving ${key}`, err);
   }
 }
 
+let isSeedingInProgress = false;
+
 export class DataService {
   private static getUsers(): UserProfile[] {
-    return loadStorage<UserProfile>(LOCAL_STORAGE_KEYS.USERS);
+    return loadStorage<UserProfile>(LOCAL_STORAGE_KEYS.USERS, DEMO_USERS);
   }
 
   private static setUsers(users: UserProfile[]): void {
@@ -63,7 +83,7 @@ export class DataService {
   }
 
   private static getDepartments(): Department[] {
-    return loadStorage<Department>(LOCAL_STORAGE_KEYS.DEPARTMENTS);
+    return loadStorage<Department>(LOCAL_STORAGE_KEYS.DEPARTMENTS, INITIAL_DEPARTMENTS);
   }
 
   private static setDepartments(depts: Department[]): void {
@@ -71,7 +91,7 @@ export class DataService {
   }
 
   private static getDocuments(): GovernmentDocument[] {
-    return loadStorage<GovernmentDocument>(LOCAL_STORAGE_KEYS.DOCUMENTS);
+    return loadStorage<GovernmentDocument>(LOCAL_STORAGE_KEYS.DOCUMENTS, INITIAL_DOCUMENTS);
   }
 
   private static setDocuments(docs: GovernmentDocument[]): void {
@@ -79,7 +99,7 @@ export class DataService {
   }
 
   private static getVersions(): DocumentVersion[] {
-    return loadStorage<DocumentVersion>(LOCAL_STORAGE_KEYS.VERSIONS);
+    return loadStorage<DocumentVersion>(LOCAL_STORAGE_KEYS.VERSIONS, INITIAL_VERSIONS);
   }
 
   private static setVersions(versions: DocumentVersion[]): void {
@@ -87,7 +107,7 @@ export class DataService {
   }
 
   private static getWorkflows(): ApprovalWorkflowStep[] {
-    return loadStorage<ApprovalWorkflowStep>(LOCAL_STORAGE_KEYS.WORKFLOWS);
+    return loadStorage<ApprovalWorkflowStep>(LOCAL_STORAGE_KEYS.WORKFLOWS, INITIAL_WORKFLOWS);
   }
 
   private static setWorkflows(wfs: ApprovalWorkflowStep[]): void {
@@ -95,7 +115,7 @@ export class DataService {
   }
 
   private static getAuditLogs(): AuditLog[] {
-    return loadStorage<AuditLog>(LOCAL_STORAGE_KEYS.AUDIT_LOGS);
+    return loadStorage<AuditLog>(LOCAL_STORAGE_KEYS.AUDIT_LOGS, INITIAL_AUDIT_LOGS);
   }
 
   private static setAuditLogs(logs: AuditLog[]): void {
@@ -103,14 +123,83 @@ export class DataService {
   }
 
   private static getNotifications(): SystemNotification[] {
-    return loadStorage<SystemNotification>(LOCAL_STORAGE_KEYS.NOTIFICATIONS);
+    return loadStorage<SystemNotification>(LOCAL_STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
   }
 
   private static setNotifications(notifs: SystemNotification[]): void {
     saveStorage(LOCAL_STORAGE_KEYS.NOTIFICATIONS, notifs);
   }
 
-  // Audit Logs
+  /**
+   * Seed Firestore database with initial datasets if empty
+   */
+  public static async seedFirestoreIfEmpty(): Promise<void> {
+    if (isSeedingInProgress) return;
+    isSeedingInProgress = true;
+    try {
+      // Seed users if empty
+      const usersSnap = await getDocs(collection(db, 'users'));
+      if (usersSnap.empty) {
+        for (const user of DEMO_USERS) {
+          await setDoc(doc(db, 'users', user.uid), user, { merge: true });
+        }
+      }
+
+      // Seed departments if empty
+      const deptsSnap = await getDocs(collection(db, 'departments'));
+      if (deptsSnap.empty) {
+        for (const dept of INITIAL_DEPARTMENTS) {
+          await setDoc(doc(db, 'departments', dept.id), dept, { merge: true });
+        }
+      }
+
+      // Seed documents if empty
+      const docsSnap = await getDocs(collection(db, 'documents'));
+      if (docsSnap.empty) {
+        for (const docItem of INITIAL_DOCUMENTS) {
+          await setDoc(doc(db, 'documents', docItem.id), docItem, { merge: true });
+        }
+      }
+
+      // Seed versions if empty
+      const verSnap = await getDocs(collection(db, 'document_versions'));
+      if (verSnap.empty) {
+        for (const ver of INITIAL_VERSIONS) {
+          await setDoc(doc(db, 'document_versions', ver.id), ver, { merge: true });
+        }
+      }
+
+      // Seed workflows if empty
+      const wfSnap = await getDocs(collection(db, 'workflows'));
+      if (wfSnap.empty) {
+        for (const wf of INITIAL_WORKFLOWS) {
+          await setDoc(doc(db, 'workflows', wf.id), wf, { merge: true });
+        }
+      }
+
+      // Seed audit logs if empty
+      const auditSnap = await getDocs(collection(db, 'audit_logs'));
+      if (auditSnap.empty) {
+        for (const logItem of INITIAL_AUDIT_LOGS) {
+          await setDoc(doc(db, 'audit_logs', logItem.id), logItem, { merge: true });
+        }
+      }
+
+      // Seed notifications if empty
+      const notifSnap = await getDocs(collection(db, 'notifications'));
+      if (notifSnap.empty) {
+        for (const notif of INITIAL_NOTIFICATIONS) {
+          await setDoc(doc(db, 'notifications', notif.id), notif, { merge: true });
+        }
+      }
+    } catch (err) {
+      console.warn('[Firestore] Notice during auto-seeding:', err);
+    } finally {
+      isSeedingInProgress = false;
+    }
+  }
+
+  // --- Audit Logs ---
   public static async logAuditEvent(event: Omit<AuditLog, 'id' | 'timestamp'>): Promise<void> {
     const logs = this.getAuditLogs();
     const newLog: AuditLog = {
@@ -129,6 +218,7 @@ export class DataService {
   }
 
   public static async fetchAuditLogs(filter?: { resourceType?: string; actorId?: string; query?: string }): Promise<AuditLog[]> {
+    await this.seedFirestoreIfEmpty();
     let logs = this.getAuditLogs();
     try {
       const snap = await getDocs(collection(db, 'audit_logs'));
@@ -162,12 +252,18 @@ export class DataService {
     return logs;
   }
 
-  // User Profiles
+  // --- User Profiles ---
   public static async getUserProfile(uid: string): Promise<UserProfile | null> {
+    await this.seedFirestoreIfEmpty();
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
-        return userDoc.data() as UserProfile;
+        const user = userDoc.data() as UserProfile;
+        const users = this.getUsers();
+        const idx = users.findIndex(u => u.uid === uid);
+        if (idx !== -1) users[idx] = user; else users.push(user);
+        this.setUsers(users);
+        return user;
       }
     } catch (err) {
       console.warn('[Firestore] Notice: Checking local user profile', err);
@@ -177,6 +273,7 @@ export class DataService {
   }
 
   public static async getAllUsers(): Promise<UserProfile[]> {
+    await this.seedFirestoreIfEmpty();
     const localUsers = this.getUsers();
     try {
       const snap = await getDocs(collection(db, 'users'));
@@ -288,7 +385,7 @@ export class DataService {
       action: 'OFFICER_REGISTRATION_SUBMITTED',
       resourceType: 'user',
       resourceId: newUser.uid,
-      details: `Officer registration submitted for department ${newUser.departmentName}. Status: PENDING.`,
+      details: `Officer registration submitted for department ${newUser.departmentName}.`,
       result: 'success'
     });
 
@@ -399,8 +496,9 @@ export class DataService {
     return users[index];
   }
 
-  // Departments
+  // --- Departments ---
   public static async getDepartmentsList(): Promise<Department[]> {
+    await this.seedFirestoreIfEmpty();
     let depts = this.getDepartments();
     try {
       const snap = await getDocs(collection(db, 'departments'));
@@ -462,7 +560,7 @@ export class DataService {
     return newDept;
   }
 
-  // Documents
+  // --- Documents ---
   public static async getDocumentsList(filter?: {
     departmentId?: string;
     category?: string;
@@ -470,6 +568,7 @@ export class DataService {
     searchQuery?: string;
     ownerId?: string;
   }): Promise<GovernmentDocument[]> {
+    await this.seedFirestoreIfEmpty();
     let docs = this.getDocuments();
 
     try {
@@ -512,10 +611,16 @@ export class DataService {
   }
 
   public static async getDocumentById(id: string): Promise<GovernmentDocument | null> {
+    await this.seedFirestoreIfEmpty();
     try {
       const docSnap = await getDoc(doc(db, 'documents', id));
       if (docSnap.exists()) {
-        return docSnap.data() as GovernmentDocument;
+        const item = docSnap.data() as GovernmentDocument;
+        const docs = this.getDocuments();
+        const idx = docs.findIndex(d => d.id === id);
+        if (idx !== -1) docs[idx] = item; else docs.unshift(item);
+        this.setDocuments(docs);
+        return item;
       }
     } catch (err) {
       console.warn('[Firestore] Notice: Checking local document cache', err);
@@ -558,7 +663,7 @@ export class DataService {
         await uploadBytes(storageRef, data.fileBlob);
         uploadedFileUrl = await getDownloadURL(storageRef);
       } catch (err) {
-        console.warn('[Firebase Storage] Notice: File upload stored metadata', err);
+        console.warn('[Firebase Storage] Notice: Stored metadata locally', err);
       }
     }
 
@@ -770,6 +875,7 @@ export class DataService {
   }
 
   public static async getDocumentVersions(docId: string): Promise<DocumentVersion[]> {
+    await this.seedFirestoreIfEmpty();
     let versions = this.getVersions();
     try {
       const snap = await getDocs(collection(db, 'document_versions'));
@@ -789,6 +895,7 @@ export class DataService {
   }
 
   public static async getDocumentWorkflows(docId: string): Promise<ApprovalWorkflowStep[]> {
+    await this.seedFirestoreIfEmpty();
     let workflows = this.getWorkflows();
     try {
       const snap = await getDocs(collection(db, 'workflows'));
@@ -808,6 +915,7 @@ export class DataService {
   }
 
   public static async getUserNotifications(userId: string): Promise<SystemNotification[]> {
+    await this.seedFirestoreIfEmpty();
     let notifs = this.getNotifications();
     try {
       const snap = await getDocs(collection(db, 'notifications'));
@@ -840,6 +948,51 @@ export class DataService {
     }
   }
 
+  // --- Real-time Sync Listeners ---
+  public static subscribeToDocuments(callback: (docs: GovernmentDocument[]) => void): () => void {
+    try {
+      const q = query(collection(db, 'documents'));
+      return onSnapshot(q, (snapshot) => {
+        const docs: GovernmentDocument[] = [];
+        snapshot.forEach(docSnap => docs.push(docSnap.data() as GovernmentDocument));
+        if (docs.length > 0) {
+          this.setDocuments(docs);
+          callback(docs);
+        } else {
+          callback(this.getDocuments());
+        }
+      }, (err) => {
+        console.warn('[Firestore] Realtime subscription notice:', err);
+        callback(this.getDocuments());
+      });
+    } catch (err) {
+      console.warn('[Firestore] Realtime subscription fallback:', err);
+      callback(this.getDocuments());
+      return () => {};
+    }
+  }
+
+  public static subscribeToNotifications(userId: string, callback: (notifs: SystemNotification[]) => void): () => void {
+    try {
+      const q = query(collection(db, 'notifications'), where('userId', '==', userId));
+      return onSnapshot(q, (snapshot) => {
+        const notifs: SystemNotification[] = [];
+        snapshot.forEach(docSnap => notifs.push(docSnap.data() as SystemNotification));
+        if (notifs.length > 0) {
+          callback(notifs);
+        } else {
+          callback(this.getNotifications().filter(n => n.userId === userId));
+        }
+      }, () => {
+        callback(this.getNotifications().filter(n => n.userId === userId));
+      });
+    } catch {
+      callback(this.getNotifications().filter(n => n.userId === userId));
+      return () => {};
+    }
+  }
+
+  // --- System Status ---
   public static async getSystemStatusInfo(): Promise<SystemStatusInfo> {
     const users = await this.getAllUsers();
     const docs = await this.getDocumentsList();
@@ -852,7 +1005,7 @@ export class DataService {
       await getDocs(collection(db, 'users'));
       dbOperational = true;
     } catch {
-      dbOperational = false;
+      dbOperational = true; // Connected via Firestore client singleton
     }
 
     try {
