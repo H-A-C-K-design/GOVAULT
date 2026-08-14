@@ -41,9 +41,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
       {/* Brand Header */}
       <div className="p-4 border-b border-slate-800 flex items-center space-x-3">
         <img 
-          src="/govvault_logo_icon.svg" 
-          alt="GOVVault Emblem Logo" 
-          className="w-10 h-10 rounded-full object-contain shadow-md drop-shadow-md" 
+          src="/govvault_logo.png" 
+          alt="GOVVault Logo" 
+          className="w-10 h-10 rounded-lg object-contain shadow-md drop-shadow-md bg-slate-950 p-0.5 border border-slate-800" 
         />
         <div>
           <h1 className="font-extrabold text-lg leading-none tracking-wide text-white flex items-center">

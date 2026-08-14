@@ -20,9 +20,9 @@ export const Navbar: React.FC = () => {
           {/* Logo & Identity */}
           <Link to="/" className="flex items-center space-x-3 group">
             <img 
-              src="/govvault_logo_icon.svg" 
+              src="/govvault_logo.png" 
               alt="GOVVault Logo" 
-              className="w-11 h-11 rounded-full object-contain shadow-lg group-hover:scale-105 transition-transform" 
+              className="w-11 h-11 rounded-lg object-contain shadow-lg bg-slate-950 p-0.5 border border-slate-800 group-hover:scale-105 transition-transform" 
             />
             <div>
               <span className="font-extrabold text-lg tracking-tight text-white flex items-center">
