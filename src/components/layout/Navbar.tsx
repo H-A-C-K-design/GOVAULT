@@ -20,13 +20,13 @@ export const Navbar: React.FC = () => {
           {/* Logo & Identity */}
           <Link to="/" className="flex items-center space-x-3 group">
             <img 
-              src="/gov_seal.jpg" 
-              alt="Government of India Seal" 
-              className="w-11 h-11 rounded-full object-cover shadow-lg border border-amber-500/50 group-hover:scale-105 transition-transform" 
+              src="/govvault_logo_icon.svg" 
+              alt="GOVVault Logo" 
+              className="w-11 h-11 rounded-full object-contain shadow-lg group-hover:scale-105 transition-transform" 
             />
             <div>
-              <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-                GOVAULT
+              <span className="font-extrabold text-lg tracking-tight text-white flex items-center">
+                <span>GOV</span><span className="text-emerald-400">Vault</span>
               </span>
               <span className="text-[10px] text-gov-300 block -mt-1 font-mono tracking-wider">
                 SMART DIGITAL DOCUMENTATION SYSTEM

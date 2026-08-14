@@ -108,9 +108,9 @@ export const LandingPage: React.FC = () => {
                 <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
                   <div className="flex items-center space-x-3">
                     <img 
-                      src="/gov_seal.jpg" 
-                      alt="Government of India Seal" 
-                      className="w-12 h-12 rounded-full object-cover border border-amber-500/50 shadow-md p-0.5 bg-slate-950" 
+                      src="/govvault_logo_icon.svg" 
+                      alt="GOVVault Emblem Logo" 
+                      className="w-12 h-12 rounded-full object-contain shadow-md" 
                     />
                     <div>
                       <h3 className="font-extrabold text-base text-white tracking-tight flex items-center gap-2">

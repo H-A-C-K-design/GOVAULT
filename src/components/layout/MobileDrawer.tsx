@@ -54,13 +54,15 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({ isOpen, onClose }) =
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <img 
-              src="/gov_seal.jpg" 
-              alt="Government Seal" 
-              className="w-9 h-9 rounded-full object-cover border border-amber-500/50" 
+              src="/govvault_logo_icon.svg" 
+              alt="GOVVault Logo" 
+              className="w-10 h-10 rounded-full object-contain shadow-md" 
             />
             <div>
-              <h2 className="font-extrabold text-sm text-white leading-tight">GOVAULT</h2>
-              <span className="text-[9px] text-gov-400 font-mono tracking-wider block">ANDROID PORTAL</span>
+              <h2 className="font-extrabold text-sm text-white leading-tight flex items-center">
+                <span>GOV</span><span className="text-emerald-400">Vault</span>
+              </h2>
+              <span className="text-[9px] text-gov-400 font-mono tracking-wider block">MOBILE PORTAL</span>
             </div>
           </div>
 

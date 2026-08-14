@@ -72,11 +72,13 @@ export const RegisterPage: React.FC = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-2xl text-center space-y-2">
         <Link to="/" className="inline-flex items-center space-x-3 group">
           <img 
-            src="/gov_seal.jpg" 
-            alt="Government of India Seal" 
-            className="w-12 h-12 rounded-full object-cover shadow-lg border border-amber-500/50 group-hover:scale-105 transition-transform" 
+            src="/govvault_logo_icon.svg" 
+            alt="GOVVault Logo" 
+            className="w-14 h-14 rounded-full object-contain shadow-xl group-hover:scale-105 transition-transform" 
           />
-          <span className="font-extrabold text-2xl tracking-tight text-white">GOVAULT</span>
+          <span className="font-extrabold text-2xl tracking-tight text-white flex items-center">
+            <span>GOV</span><span className="text-emerald-400">Vault</span>
+          </span>
         </Link>
         <h2 className="text-2xl font-extrabold text-white">Officer Registration Request</h2>
         <p className="text-xs text-slate-400">

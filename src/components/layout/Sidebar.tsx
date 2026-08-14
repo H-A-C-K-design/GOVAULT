@@ -41,12 +41,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
       {/* Brand Header */}
       <div className="p-4 border-b border-slate-800 flex items-center space-x-3">
         <img 
-          src="/gov_seal.jpg" 
-          alt="Government Seal" 
-          className="w-9 h-9 rounded-full object-cover shadow-md border border-amber-500/50" 
+          src="/govvault_logo_icon.svg" 
+          alt="GOVVault Emblem Logo" 
+          className="w-10 h-10 rounded-full object-contain shadow-md drop-shadow-md" 
         />
         <div>
-          <h1 className="font-bold text-lg leading-none tracking-wide text-white">GovDoc Portal</h1>
+          <h1 className="font-extrabold text-lg leading-none tracking-wide text-white flex items-center">
+            <span>GOV</span><span className="text-emerald-400">Vault</span>
+          </h1>
           <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider flex items-center gap-1 mt-0.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> PORT 443 HTTPS
           </span>
